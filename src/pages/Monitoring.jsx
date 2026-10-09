@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// Realistic sample log data for each event type
 const SAMPLE_LOGS = {
   logcat: {
     title: 'logcat (Wi-Fi disconnect & reconnect)',
@@ -93,7 +92,6 @@ const SAMPLE_LOGS = {
 };
 
 const Monitoring = () => {
-  // Alert rules state
   const [alertRules, setAlertRules] = useState([
     { id: 1, name: 'Unexpected reboot', desc: 'Collect bugreport · email + Slack', enabled: true },
     { id: 2, name: 'Temperature > 45 °C for 5 min', desc: 'Slack #relay-qa', enabled: true },
@@ -102,8 +100,7 @@ const Monitoring = () => {
     { id: 5, name: 'Device offline > 10 min', desc: 'Power-cycle, then email', enabled: true }
   ]);
 
-  // Modals state
-  const [activeModal, setActiveModal] = useState(null); // 'logs' | 'createBug' | 'compareThermal' | 'addRule' | 'eventDrawer'
+  const [activeModal, setActiveModal] = useState(null);
   const [modalLogKey, setModalLogKey] = useState('bugreport');
   const [toastMessage, setToastMessage] = useState(null);
   const [newRuleName, setNewRuleName] = useState('');
@@ -167,7 +164,6 @@ const Monitoring = () => {
     showToast(`Created Jira issue RELAY-4819: "${bugForm.title}"`);
   };
 
-  // Timeline events plotted on chart
   const timelineEvents = [
     { id: 'anr1', x: 252, label: 'ANR', type: 'anr', logKey: 'traces_service', time: 'Sep 24 06:24', desc: 'ANR in com.relay.ptt (service timeout)' },
     { id: 'thermal', x: 320, label: 'H Temp', type: 'thermal', logKey: 'thermal', time: 'Sep 25 05:17', desc: 'Peak 46.2 °C above 45 °C for 6 min' },
@@ -176,7 +172,6 @@ const Monitoring = () => {
 
   return (
     <div className="monitoring-page">
-      {/* 6 Top Metric / KPI Cards */}
       <div className="monitoring-stats-grid">
         <div className="monitoring-stat-card">
           <div className="monitoring-stat-label">Uptime since last boot</div>
@@ -215,11 +210,8 @@ const Monitoring = () => {
         </div>
       </div>
 
-      {/* Main 2-Column Content Layout */}
       <div className="monitoring-main-layout">
-        {/* Left Column */}
         <div className="monitoring-left-col">
-          {/* Soak Timeline Chart Card */}
           <div className="monitoring-card">
             <div className="monitoring-card-header">
               <div className="monitoring-card-title">
@@ -241,7 +233,6 @@ const Monitoring = () => {
               </div>
             </div>
 
-            {/* Interactive SVG Multi-track Timeline */}
             <div className="timeline-chart-wrapper">
               <svg 
                 className="timeline-svg-container" 
@@ -250,7 +241,6 @@ const Monitoring = () => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const svgX = ((e.clientX - rect.left) / rect.width) * 880;
                   if (svgX >= 160 && svgX <= 840) {
-                    // Calculate interpolated progress
                     const dayRatio = (svgX - 160) / (840 - 160);
                     const totalHours = dayRatio * 168;
                     const elapsedDays = Math.floor(totalHours / 24) + 1;
@@ -271,13 +261,6 @@ const Monitoring = () => {
                   </linearGradient>
                 </defs>
 
-                {/* Grid Channel Dividers */}
-                {/* Track 1: Battery 20 - 95 */}
-                {/* Track 2: Temperature 95 - 175 */}
-                {/* Track 3: Memory 175 - 255 */}
-                {/* Track 4: CPU 255 - 335 */}
-                {/* Track 5: Events 335 - 370 */}
-                {/* Track 6: Test activity 370 - 395 */}
                 <line x1="160" y1="95" x2="840" y2="95" stroke="#f1f5f9" strokeWidth="1" />
                 <line x1="160" y1="175" x2="840" y2="175" stroke="#f1f5f9" strokeWidth="1" />
                 <line x1="160" y1="255" x2="840" y2="255" stroke="#f1f5f9" strokeWidth="1" />
@@ -285,7 +268,6 @@ const Monitoring = () => {
                 <line x1="160" y1="370" x2="840" y2="370" stroke="#f1f5f9" strokeWidth="1" />
                 <line x1="160" y1="395" x2="840" y2="395" stroke="#e2e8f0" strokeWidth="1" />
 
-                {/* Day vertical grid lines */}
                 {[0, 1, 2, 3, 4, 5, 6].map((i) => {
                   const gx = 160 + (i * (680 / 6));
                   return (
@@ -296,45 +278,32 @@ const Monitoring = () => {
                   );
                 })}
 
-                {/* Left labels column */}
-                {/* Battery */}
                 <text x="24" y="44" fill="#6b7280" fontSize="12" fontWeight="500">Battery</text>
                 <text x="24" y="64" fill="#111827" fontSize="15" fontWeight="700">64%</text>
 
-                {/* Temperature */}
                 <text x="24" y="122" fill="#6b7280" fontSize="12" fontWeight="500">Temperature</text>
                 <text x="24" y="142" fill="#111827" fontSize="15" fontWeight="700">39.1 °C</text>
 
-                {/* Memory */}
                 <text x="24" y="200" fill="#6b7280" fontSize="12" fontWeight="500">Memory (system PSS)</text>
                 <text x="24" y="220" fill="#111827" fontSize="15" fontWeight="700">822 MB</text>
 
-                {/* CPU */}
                 <text x="24" y="278" fill="#6b7280" fontSize="12" fontWeight="500">CPU</text>
                 <text x="24" y="298" fill="#111827" fontSize="15" fontWeight="700">31%</text>
 
-                {/* Events label */}
                 <text x="24" y="356" fill="#6b7280" fontSize="12" fontWeight="500">Events</text>
 
-                {/* Test activity label */}
                 <text x="24" y="386" fill="#6b7280" fontSize="12" fontWeight="500">Test activity</text>
 
-                {/* Shaded future area from "Now" line (x=375) to right edge (x=840) */}
                 <rect x="375" y="20" width="465" height="375" fill="url(#futureGradient)" opacity="0.8" />
                 <text x="590" y="235" fill="#64748b" fontSize="12" fontWeight="500" textAnchor="middle">
                   4 d 1.8 h remaining
                 </text>
 
-                {/* Temperature Threshold line at 45 °C */}
-                {/* 45 °C threshold corresponds to Y = 118 */}
                 <line x1="160" y1="118" x2="840" y2="118" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 3" />
                 <text x="815" y="112" fill="#ef4444" fontSize="11" fontWeight="600" textAnchor="end">45 °C</text>
 
-                {/* Red dashed vertical alert marker at peak temperature event (x=320) */}
                 <line x1="320" y1="114" x2="320" y2="355" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3 3" />
 
-                {/* TRACK 1: BATTERY */}
-                {/* Build 0919 (Grey Dashed) Sawtooth baseline (full 7 days) */}
                 <path
                   d="M 160 25 L 210 75 L 215 30 L 265 72 L 270 28 L 320 74 L 325 32 L 375 75 L 380 30 L 430 74 L 435 28 L 485 76 L 490 30 L 540 75 L 545 32 L 595 73 L 600 28 L 650 75 L 655 30 L 705 74 L 710 32 L 760 76 L 765 30 L 815 74 L 840 55"
                   fill="none"
@@ -343,7 +312,6 @@ const Monitoring = () => {
                   strokeDasharray="4 3"
                 />
 
-                {/* Build 0923 (Solid Blue) Sawtooth (up to Now: x=375) */}
                 <path
                   d="M 160 30 L 205 78 L 210 28 L 258 76 L 264 26 L 312 79 L 318 29 L 366 74 L 372 32 L 375 52"
                   fill="none"
@@ -353,8 +321,6 @@ const Monitoring = () => {
                   strokeLinejoin="round"
                 />
 
-                {/* TRACK 2: TEMPERATURE */}
-                {/* Build 0919 (Grey dashed) */}
                 <path
                   d="M 160 148 Q 200 142, 230 152 T 300 144 T 375 140 T 450 145 T 520 142 T 600 146 T 680 143 T 760 145 T 840 144"
                   fill="none"
@@ -363,7 +329,6 @@ const Monitoring = () => {
                   strokeDasharray="4 3"
                 />
 
-                {/* Build 0923 (Solid Blue) with peak spike at x=320 reaching 46.2 °C (y=114) */}
                 <path
                   d="M 160 146 Q 190 144, 210 150 T 250 142 T 280 148 L 305 132 L 320 114 L 332 136 L 350 147 L 375 145"
                   fill="none"
@@ -373,8 +338,6 @@ const Monitoring = () => {
                   strokeLinejoin="round"
                 />
 
-                {/* TRACK 3: MEMORY (System PSS) */}
-                {/* Build 0919 (Grey dashed) */}
                 <path
                   d="M 160 226 L 210 223 L 212 225 L 270 220 L 272 222 L 330 218 L 375 215 T 450 212 T 530 208 T 610 205 T 690 202 T 770 198 T 840 195"
                   fill="none"
@@ -383,7 +346,6 @@ const Monitoring = () => {
                   strokeDasharray="4 3"
                 />
 
-                {/* Build 0923 (Solid Blue) with upward trend (+16 MB/day) */}
                 <path
                   d="M 160 225 L 208 221 L 210 223 L 265 217 L 268 220 L 318 214 L 322 216 L 375 210"
                   fill="none"
@@ -393,8 +355,6 @@ const Monitoring = () => {
                   strokeLinejoin="round"
                 />
 
-                {/* TRACK 4: CPU */}
-                {/* Build 0923 (Solid Blue) Fluctuations */}
                 <path
                   d="M 160 308 L 175 308 L 180 292 L 195 292 L 200 308 L 220 308 L 225 285 L 235 285 L 240 308 L 260 308 L 265 282 L 280 282 L 285 308 L 305 308 L 310 274 L 325 274 L 330 308 L 345 308 L 350 288 L 365 288 L 370 308 L 375 306"
                   fill="none"
@@ -404,7 +364,6 @@ const Monitoring = () => {
                   strokeLinejoin="round"
                 />
 
-                {/* TRACK 5: EVENTS BADGES */}
                 {timelineEvents.map((ev) => (
                   <g 
                     key={ev.id} 
@@ -433,30 +392,23 @@ const Monitoring = () => {
                   </g>
                 ))}
 
-                {/* TRACK 6: TEST ACTIVITY BLOCKS */}
                 <g>
-                  {/* PTT call block 1 */}
                   <rect x="180" y="375" width="40" height="15" rx="3" fill="#dbeafe" />
                   <text x="200" y="386" fill="#1d4ed8" fontSize="9" fontWeight="600" textAnchor="middle">PTT call</text>
 
-                  {/* Idle standby block 1 */}
                   <rect x="224" y="375" width="42" height="15" rx="3" fill="#f1f5f9" />
                   <text x="245" y="386" fill="#475569" fontSize="9" fontWeight="500" textAnchor="middle">Idle stan</text>
 
-                  {/* PTT call block 2 */}
                   <rect x="270" y="375" width="40" height="15" rx="3" fill="#dbeafe" />
                   <text x="290" y="386" fill="#1d4ed8" fontSize="9" fontWeight="600" textAnchor="middle">PTT call</text>
 
-                  {/* Idle standby block 2 */}
                   <rect x="314" y="375" width="42" height="15" rx="3" fill="#f1f5f9" />
                   <text x="335" y="386" fill="#475569" fontSize="9" fontWeight="500" textAnchor="middle">Idle stan</text>
                 </g>
 
-                {/* Vertical "Now" Divider at x = 375 */}
                 <line x1="375" y1="20" x2="375" y2="395" stroke="#1e293b" strokeWidth="2" />
                 <text x="375" y="16" fill="#1e293b" fontSize="11" fontWeight="700" textAnchor="middle">Now</text>
 
-                {/* X-AXIS LABELS (D1 to D7) */}
                 <text x="175" y="416" fill="#64748b" fontSize="11" fontWeight="500">D1 - Sep 23</text>
                 <text x="285" y="416" fill="#64748b" fontSize="11" fontWeight="500">D2 - Sep 24</text>
                 <text x="395" y="416" fill="#64748b" fontSize="11" fontWeight="500">D3 - Sep 25</text>
@@ -465,7 +417,6 @@ const Monitoring = () => {
                 <text x="725" y="416" fill="#64748b" fontSize="11" fontWeight="500">D6 - Sep 28</text>
                 <text x="805" y="416" fill="#64748b" fontSize="11" fontWeight="500">D7 - Sep 29</text>
 
-                {/* Interactive Crosshair & Tooltip */}
                 {hoveredPoint && (
                   <g>
                     <line 
@@ -514,7 +465,6 @@ const Monitoring = () => {
             </div>
           </div>
 
-          {/* Findings to review Card */}
           <div className="monitoring-card">
             <div className="monitoring-card-header">
               <div className="monitoring-card-title">Findings to review</div>
@@ -522,7 +472,6 @@ const Monitoring = () => {
             </div>
 
             <div className="findings-grid">
-              {/* Finding 1: Memory */}
               <div className="finding-card">
                 <div>
                   <span className="finding-badge badge-yellow">Memory</span>
@@ -541,7 +490,6 @@ const Monitoring = () => {
                 </button>
               </div>
 
-              {/* Finding 2: Stability */}
               <div className="finding-card">
                 <div>
                   <span className="finding-badge badge-red">Stability</span>
@@ -560,7 +508,6 @@ const Monitoring = () => {
                 </button>
               </div>
 
-              {/* Finding 3: Thermal */}
               <div className="finding-card">
                 <div>
                   <span className="finding-badge badge-orange">Thermal</span>
@@ -582,9 +529,7 @@ const Monitoring = () => {
           </div>
         </div>
 
-        {/* Right Column */}
         <div className="monitoring-right-col">
-          {/* Card 1: Event log */}
           <div className="monitoring-card">
             <div className="monitoring-card-header">
               <div className="monitoring-card-title">Event log</div>
@@ -597,7 +542,6 @@ const Monitoring = () => {
             </div>
 
             <div className="event-log-list">
-              {/* Event 1 */}
               <div className="event-log-item">
                 <span className="event-dot blue"></span>
                 <div className="event-content">
@@ -608,7 +552,6 @@ const Monitoring = () => {
                 </div>
               </div>
 
-              {/* Event 2 */}
               <div className="event-log-item">
                 <span className="event-dot amber"></span>
                 <div className="event-content">
@@ -619,7 +562,6 @@ const Monitoring = () => {
                 </div>
               </div>
 
-              {/* Event 3 */}
               <div className="event-log-item">
                 <span className="event-dot amber"></span>
                 <div className="event-content">
@@ -630,7 +572,6 @@ const Monitoring = () => {
                 </div>
               </div>
 
-              {/* Event 4 */}
               <div className="event-log-item">
                 <span className="event-dot red"></span>
                 <div className="event-content">
@@ -641,7 +582,6 @@ const Monitoring = () => {
                 </div>
               </div>
 
-              {/* Event 5 */}
               <div className="event-log-item">
                 <span className="event-dot red"></span>
                 <div className="event-content">
@@ -652,7 +592,6 @@ const Monitoring = () => {
                 </div>
               </div>
 
-              {/* Event 6 */}
               <div className="event-log-item">
                 <span className="event-dot amber"></span>
                 <div className="event-content">
@@ -665,7 +604,6 @@ const Monitoring = () => {
             </div>
           </div>
 
-          {/* Card 2: Alert rules */}
           <div className="monitoring-card">
             <div className="monitoring-card-header">
               <div className="monitoring-card-title">Alert rules</div>
@@ -698,7 +636,6 @@ const Monitoring = () => {
             </div>
           </div>
 
-          {/* Card 3: Capture and retention */}
           <div className="monitoring-card">
             <div className="monitoring-card-header">
               <div className="monitoring-card-title">Capture and retention</div>
@@ -742,7 +679,6 @@ const Monitoring = () => {
         </div>
       </div>
 
-      {/* Floating Action Toast */}
       {toastMessage && (
         <div style={{
           position: 'fixed',
@@ -765,7 +701,6 @@ const Monitoring = () => {
         </div>
       )}
 
-      {/* Modal 1: Log Viewer Modal */}
       {activeModal === 'logs' && SAMPLE_LOGS[modalLogKey] && (
         <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
           <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -818,7 +753,6 @@ const Monitoring = () => {
         </div>
       )}
 
-      {/* Modal 2: Create Bug Modal */}
       {activeModal === 'createBug' && (
         <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
           <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -883,7 +817,6 @@ const Monitoring = () => {
         </div>
       )}
 
-      {/* Modal 3: Thermal Comparison Modal */}
       {activeModal === 'compareThermal' && (
         <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
           <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -921,7 +854,6 @@ const Monitoring = () => {
         </div>
       )}
 
-      {/* Modal 4: Add Alert Rule Modal */}
       {activeModal === 'addRule' && (
         <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
           <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -962,7 +894,6 @@ const Monitoring = () => {
         </div>
       )}
 
-      {/* Modal 5: All 23 Events Drawer Modal */}
       {activeModal === 'eventDrawer' && (
         <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
           <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>

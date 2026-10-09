@@ -86,10 +86,14 @@ const TopBar = () => {
   const getPageTitle = () => {
     if (location.pathname === '/') return { label: 'Overview', title: 'Dashboard' };
     if (location.pathname.startsWith('/test-plans')) return { label: 'Test Plans / New plan', title: 'Nightly Regression · Relay fleet' };
+    if (location.pathname === '/runs') return { label: 'Execute', title: 'Runs' };
     if (location.pathname === '/schedules') return { label: 'Execute', title: 'Schedules' };
+    if (location.pathname === '/devices') return { label: 'Fleet', title: 'Devices' };
     if (location.pathname === '/monitoring') return { label: 'Fleet / Monitoring', title: 'Relay X-002 · Soak #1045' };
     if (location.pathname === '/reports') return { label: 'Analyze', title: 'Reports' };
+    if (location.pathname === '/builds') return { label: 'Analyze', title: 'Builds' };
     if (location.pathname === '/test-catalog') return { label: 'Library', title: 'Test Catalog' };
+    if (location.pathname === '/settings') return { label: 'System', title: 'Workspace Settings' };
     return { label: '', title: '' };
   };
 
@@ -221,7 +225,43 @@ const TopBar = () => {
           </button>
         </div>
       )}
-      
+
+      {location.pathname === '/settings' && (
+        <div className="top-bar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            color: '#059669',
+            background: '#ecfdf5',
+            padding: '6px 12px',
+            borderRadius: '6px',
+            border: '1px solid #a7f3d0',
+            fontWeight: '500'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }}></span>
+            Cluster synced
+          </div>
+          <button 
+            type="button"
+            className="btn btn-secondary" 
+            onClick={() => window.dispatchEvent(new CustomEvent('reset-settings-defaults'))}
+            style={{ height: '34px', borderRadius: '6px', padding: '0 12px', fontSize: '13px', fontWeight: '500', background: '#fff', border: '1px solid #d1d5db' }}
+          >
+            Reset
+          </button>
+          <button 
+            type="button"
+            className="btn btn-primary" 
+            onClick={() => window.dispatchEvent(new CustomEvent('save-workspace-settings'))}
+            style={{ height: '34px', borderRadius: '6px', padding: '0 16px', fontSize: '13px', fontWeight: '600' }}
+          >
+            Save Changes
+          </button>
+        </div>
+      )}
+
       {location.pathname === '/' && (
         <div className="top-bar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Build</span>

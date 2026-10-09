@@ -163,7 +163,6 @@ const Schedules = () => {
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Selected schedule editing form state
   const selectedSchedule = schedules.find((s) => s.id === selectedId) || schedules[0];
   const [formData, setFormData] = useState(selectedSchedule);
 
@@ -173,7 +172,6 @@ const Schedules = () => {
     }
   }, [selectedId, selectedSchedule]);
 
-  // Listen to TopBar "+ New schedule" button click event
   useEffect(() => {
     const handleOpenNew = () => setShowNewModal(true);
     window.addEventListener('open-new-schedule-modal', handleOpenNew);
@@ -238,7 +236,6 @@ const Schedules = () => {
     showToast(`Triggered run for "${formData.name}" now`);
   };
 
-  // Filter schedules
   const filteredSchedules = schedules.filter((s) => {
     if (activeFilter === 'All') return true;
     if (activeFilter === 'Time-based') return s.category === 'time' || s.trigger.toLowerCase().includes('daily') || s.trigger.toLowerCase().includes('weekly');
@@ -249,7 +246,6 @@ const Schedules = () => {
 
   return (
     <div className="schedules-container">
-      {/* Toast Notification */}
       {toastMessage && (
         <div
           style={{
@@ -271,9 +267,7 @@ const Schedules = () => {
         </div>
       )}
 
-      {/* Top 2-Column Section */}
       <div className="schedules-top-grid">
-        {/* Left Column: Schedules List */}
         <div className="schedules-card schedules-list-card">
           <div className="card-header-flex">
             <h2 className="card-title-count">{schedules.length} schedules</h2>
@@ -340,7 +334,6 @@ const Schedules = () => {
           </div>
         </div>
 
-        {/* Right Column: Edit Schedule */}
         <div className="schedules-card edit-schedule-card">
           <div className="edit-schedule-header">
             <div>
@@ -355,7 +348,6 @@ const Schedules = () => {
           </div>
 
           <div className="schedule-form">
-            {/* Test Plan */}
             <div className="form-group">
               <label className="form-label">Test plan</label>
               <select
@@ -380,7 +372,6 @@ const Schedules = () => {
               </select>
             </div>
 
-            {/* Trigger Mode */}
             <div className="form-group">
               <label className="form-label">Trigger</label>
               <div className="segmented-control">
@@ -402,7 +393,6 @@ const Schedules = () => {
               </div>
             </div>
 
-            {/* Repeat & Start Time */}
             <div className="form-row-2col">
               <div className="form-group">
                 <label className="form-label">Repeat</label>
@@ -429,7 +419,6 @@ const Schedules = () => {
               </div>
             </div>
 
-            {/* Days Selector */}
             <div className="form-group">
               <label className="form-label">Days</label>
               <div className="days-selector">
@@ -449,7 +438,6 @@ const Schedules = () => {
               </div>
             </div>
 
-            {/* CI New Build Inset Box */}
             <div className="ci-box">
               <label className="ci-checkbox-label">
                 <input
@@ -497,7 +485,6 @@ const Schedules = () => {
               )}
             </div>
 
-            {/* Build to test */}
             <div className="form-group">
               <label className="form-label">Build to test</label>
               <select
@@ -511,7 +498,6 @@ const Schedules = () => {
               </select>
             </div>
 
-            {/* Busy device policy */}
             <div className="form-group">
               <label className="form-label">If devices are busy at start time</label>
               <div className="radio-group">
@@ -557,7 +543,6 @@ const Schedules = () => {
               </div>
             </div>
 
-            {/* Notify & When */}
             <div className="form-row-2col">
               <div className="form-group">
                 <label className="form-label">Notify</label>
@@ -586,7 +571,6 @@ const Schedules = () => {
               </div>
             </div>
 
-            {/* Action buttons */}
             <div className="edit-form-actions">
               <button type="button" className="btn-secondary-white" onClick={handlePauseToggle}>
                 {formData.enabled ? 'Pause' : 'Resume'}
@@ -602,7 +586,6 @@ const Schedules = () => {
         </div>
       </div>
 
-      {/* Bottom Card: Device Calendar */}
       <div className="device-calendar-card">
         <div className="calendar-header">
           <div className="calendar-title-group">
@@ -632,15 +615,12 @@ const Schedules = () => {
           </div>
         </div>
 
-        {/* Timeline Grid */}
         <div className="timeline-grid-wrapper">
-          {/* Vertical Red Now Line */}
           <div className="now-time-indicator">
             <span className="now-time-badge">Now 02:40</span>
           </div>
 
           <div className="timeline-grid">
-            {/* Header row */}
             <div className="timeline-header-cell" style={{ background: '#f9fafb' }}></div>
             {['Sat 26', 'Sun 27', 'Mon 28', 'Tue 29', 'Wed 30', 'Thu 1', 'Fri 2'].map((day) => (
               <div key={day} className="timeline-header-cell">
@@ -648,14 +628,12 @@ const Schedules = () => {
               </div>
             ))}
 
-            {/* Row 1: Relay X-001 (A16) */}
             <div className="timeline-row">
               <div className="device-label-cell">
                 <span className="device-name">Relay X-001</span>
                 <span className="device-model">A16</span>
               </div>
 
-              {/* Sat 26 */}
               <div className="timeline-day-track">
                 <div
                   className="timeline-block-n"
@@ -665,7 +643,6 @@ const Schedules = () => {
                 </div>
               </div>
 
-              {/* Sun 27 (Conflict) */}
               <div className="timeline-day-track">
                 <div
                   className="conflict-cluster"
@@ -676,35 +653,30 @@ const Schedules = () => {
                 </div>
               </div>
 
-              {/* Mon 28 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Tue 29 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Wed 30 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Thu 1 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Fri 2 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
@@ -712,14 +684,12 @@ const Schedules = () => {
               </div>
             </div>
 
-            {/* Row 2: Relay X-002 (A16) */}
             <div className="timeline-row">
               <div className="device-label-cell">
                 <span className="device-name">Relay X-002</span>
                 <span className="device-model">A16</span>
               </div>
 
-              {/* Sat 26 to Wed 30: Solid Soak Bar */}
               <div className="timeline-day-track" style={{ position: 'relative' }}>
                 <div className="soak-span-bar">
                   Soak #1045 · day 3 of 7 · ends Wed 22:00
@@ -733,14 +703,12 @@ const Schedules = () => {
               <div className="timeline-day-track"></div>
             </div>
 
-            {/* Row 3: Relay M-001 (A13) */}
             <div className="timeline-row">
               <div className="device-label-cell">
                 <span className="device-name">Relay M-001</span>
                 <span className="device-model">A13</span>
               </div>
 
-              {/* Hatched offline track across all 7 days */}
               <div className="timeline-day-track" style={{ position: 'relative' }}>
                 <div className="offline-span-bar">
                   Offline since 02:14 · A13 Regression paused
@@ -754,14 +722,12 @@ const Schedules = () => {
               <div className="timeline-day-track"></div>
             </div>
 
-            {/* Row 4: Relay M-002 (A16) */}
             <div className="timeline-row">
               <div className="device-label-cell">
                 <span className="device-name">Relay M-002</span>
                 <span className="device-model">A16</span>
               </div>
 
-              {/* Sat 26 */}
               <div className="timeline-day-track" style={{ display: 'flex', alignItems: 'center' }}>
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
@@ -769,7 +735,6 @@ const Schedules = () => {
                 <div className="timeline-block-thin" title="PTT Smoke run"></div>
               </div>
 
-              {/* Sun 27 (Conflict) */}
               <div className="timeline-day-track">
                 <div
                   className="conflict-cluster"
@@ -780,35 +745,30 @@ const Schedules = () => {
                 </div>
               </div>
 
-              {/* Mon 28 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Tue 29 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Wed 30 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Thu 1 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
                 </div>
               </div>
 
-              {/* Fri 2 */}
               <div className="timeline-day-track">
                 <div className="timeline-block-n" title="Nightly Regression · 01:00">
                   N
@@ -818,7 +778,6 @@ const Schedules = () => {
           </div>
         </div>
 
-        {/* Conflict Warning Box */}
         <div className="conflict-banner">
           <div className="conflict-banner-left">
             <span className="conflict-badge-text">Conflict Sun 01:00</span>
@@ -837,7 +796,6 @@ const Schedules = () => {
         </div>
       </div>
 
-      {/* Resolve Conflict Modal */}
       {showResolveModal && (
         <div className="modal-overlay" onClick={() => setShowResolveModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -917,7 +875,6 @@ const Schedules = () => {
         </div>
       )}
 
-      {/* New Schedule Modal */}
       {showNewModal && (
         <div className="modal-overlay" onClick={() => setShowNewModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>

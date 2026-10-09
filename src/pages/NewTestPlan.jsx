@@ -39,7 +39,6 @@ const NewTestPlan = () => {
   return (
     <div className="new-plan-container">
       <div className="plan-columns">
-        {/* Column 1: Suite Library */}
         <div className="plan-col card library-col">
           <div className="col-header flex-between">
             <h2 className="col-title">Suite library</h2>
@@ -77,7 +76,6 @@ const NewTestPlan = () => {
           </div>
         </div>
 
-        {/* Column 2: Execution Pipeline */}
         <div className="plan-col main-pipeline-col">
           <div className="card pipeline-card">
             <div className="pipeline-header-area">
@@ -148,7 +146,6 @@ const NewTestPlan = () => {
           </div>
         </div>
 
-        {/* Column 3: Right Panel */}
         <div className="plan-col right-panel">
           <div className="card right-card">
             <h3 className="panel-title">Build under test</h3>

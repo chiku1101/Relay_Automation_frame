@@ -30,7 +30,6 @@ const CustomizedDot = (props) => {
 const Dashboard = () => {
   return (
     <div className="dashboard">
-      {/* 6 Top Stat Cards */}
       <div className="dashboard-grid">
         <div className="card stat-card">
           <div className="stat-label">Active runs</div>
@@ -70,10 +69,8 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-main-grid">
-        {/* Left Main Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Active and recent runs */}
           <div className="card" style={{ padding: '0' }}>
             <div className="card-header" style={{ padding: '20px 24px 16px', marginBottom: '0' }}>
               <div className="card-title" style={{ fontSize: '15px' }}>Active and recent runs</div>
@@ -178,7 +175,6 @@ const Dashboard = () => {
             </table>
           </div>
 
-          {/* Device fleet - 4 Cards */}
           <div>
             <div className="flex-between" style={{ marginBottom: '14px' }}>
               <h2 className="card-title" style={{ margin: 0, fontSize: '15px' }}>Device fleet</h2>
@@ -189,7 +185,6 @@ const Dashboard = () => {
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
               
-              {/* Relay X-001 */}
               <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div className="flex-between mb-4">
@@ -212,7 +207,6 @@ const Dashboard = () => {
                 <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '13px', padding: '6px 12px' }}>Open live view</button>
               </div>
               
-              {/* Relay X-002 */}
               <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div className="flex-between mb-4">
@@ -235,7 +229,6 @@ const Dashboard = () => {
                 <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '13px', padding: '6px 12px' }}>Open monitor</button>
               </div>
 
-              {/* Relay M-001 (Offline) */}
               <div className="card" style={{ padding: '16px', borderTop: '3px solid #ef4444', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div className="flex-between mb-4">
@@ -258,7 +251,6 @@ const Dashboard = () => {
                 <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', padding: '6px 8px', whiteSpace: 'nowrap' }}>Power-cycle (USB relay)</button>
               </div>
 
-              {/* Relay M-002 */}
               <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div className="flex-between mb-4">
@@ -284,9 +276,7 @@ const Dashboard = () => {
             </div>
           </div>
           
-          {/* Bottom Left Grid: Pass rate by component & Pass rate across builds */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            {/* Pass rate by component */}
             <div className="card" style={{ padding: '20px' }}>
               <div className="card-header" style={{ marginBottom: '16px' }}>
                 <div className="card-title" style={{ fontSize: '15px' }}>Pass rate by component · 0926</div>
@@ -316,7 +306,6 @@ const Dashboard = () => {
               </div>
             </div>
             
-            {/* Pass rate across builds */}
             <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div className="card-header" style={{ marginBottom: '12px' }}>
@@ -330,7 +319,6 @@ const Dashboard = () => {
                       <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} dy={5} />
                       <YAxis domain={[92, 98]} ticks={[92, 94, 96, 98]} tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} tickFormatter={(val) => `${val}%`} />
                       <RechartsTooltip />
-                      {/* Solid line for completed runs */}
                       <Line 
                         type="linear" 
                         dataKey="solidVal" 
@@ -339,7 +327,6 @@ const Dashboard = () => {
                         dot={<CustomizedDot />} 
                         isAnimationActive={false} 
                       />
-                      {/* Dashed line connecting 0919 to in-progress 0926 */}
                       <Line 
                         type="linear" 
                         dataKey="dashedVal" 
@@ -361,10 +348,8 @@ const Dashboard = () => {
           
         </div>
 
-        {/* Right Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Release readiness */}
           <div className="card" style={{ padding: '20px' }}>
             <div className="flex-between mb-4">
               <div className="card-title" style={{ margin: 0, fontSize: '15px' }}>Release readiness · 2.4.0 (0926)</div>
@@ -420,7 +405,6 @@ const Dashboard = () => {
             <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', fontWeight: '600', padding: '8px 16px' }}>Compare with 0919</button>
           </div>
           
-          {/* Alerts and events */}
           <div className="card" style={{ padding: '20px' }}>
             <div className="card-header" style={{ marginBottom: '16px' }}>
               <div className="card-title" style={{ fontSize: '15px' }}>Alerts and events</div>
@@ -466,7 +450,6 @@ const Dashboard = () => {
             </div>
           </div>
           
-          {/* Failure triage */}
           <div className="card" style={{ padding: '20px' }}>
             <div className="card-header" style={{ marginBottom: '16px' }}>
               <div className="card-title" style={{ fontSize: '15px' }}>Failure triage</div>

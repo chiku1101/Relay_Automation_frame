@@ -219,9 +219,7 @@ const TestCatalog = () => {
 
   return (
     <div className="test-catalog-page">
-      {/* Quick groups & Tag Filters Card */}
       <div className="catalog-filters-card">
-        {/* Row 1: Quick groups */}
         <div className="filters-row">
           <div className="filters-row-label">Quick groups</div>
           <div className="filters-chips-wrap">
@@ -237,7 +235,6 @@ const TestCatalog = () => {
           </div>
         </div>
 
-        {/* Row 2: Filter by tag */}
         <div className="filters-row">
           <div className="filters-row-label">Filter by tag</div>
           <div className="filters-chips-wrap">
@@ -254,9 +251,7 @@ const TestCatalog = () => {
         </div>
       </div>
 
-      {/* Main 2-Column Layout */}
       <div className="catalog-main-layout">
-        {/* Left Column: Coverage Matrix */}
         <div className="catalog-left-col">
           <div className="catalog-card">
             <div className="catalog-card-header">
@@ -269,7 +264,6 @@ const TestCatalog = () => {
                 </div>
               </div>
 
-              {/* Heatmap Legend */}
               <div className="heatmap-legend-box">
                 <span>0</span>
                 <div className="heatmap-gradient-bar"></div>
@@ -277,7 +271,6 @@ const TestCatalog = () => {
               </div>
             </div>
 
-            {/* Matrix Table */}
             <div className="matrix-table-container">
               <table className="matrix-table">
                 <thead>
@@ -326,7 +319,6 @@ const TestCatalog = () => {
                     </tr>
                   ))}
 
-                  {/* Summary Total Row */}
                   <tr style={{ borderTop: '2px solid #e2e8f0' }}>
                     <td className="matrix-component-cell" style={{ fontWeight: 700, paddingTop: '10px' }}>
                       Total
@@ -354,9 +346,7 @@ const TestCatalog = () => {
           </div>
         </div>
 
-        {/* Right Column: Selected Cell Test Cases & Coverage Gaps */}
         <div className="catalog-right-col">
-          {/* Card 1: Selected Cell Test Cases */}
           <div className="catalog-card">
             <div className="catalog-card-header" style={{ marginBottom: '12px' }}>
               <div>
@@ -377,7 +367,6 @@ const TestCatalog = () => {
               </button>
             </div>
 
-            {/* Test Cases List */}
             <div className="cases-list">
               {testCases.map((c) => (
                 <div key={c.id} className="case-item">
@@ -409,7 +398,6 @@ const TestCatalog = () => {
             </span>
           </div>
 
-          {/* Card 2: Coverage Gaps */}
           <div className="catalog-card">
             <div className="catalog-card-header" style={{ marginBottom: '12px' }}>
               <div className="catalog-card-title">Coverage gaps</div>
@@ -428,7 +416,6 @@ const TestCatalog = () => {
         </div>
       </div>
 
-      {/* Floating Action Toast */}
       {toastMessage && (
         <div style={{
           position: 'fixed',
@@ -451,7 +438,6 @@ const TestCatalog = () => {
         </div>
       )}
 
-      {/* Show All Modal */}
       {showAllModal && (
         <div className="catalog-modal-backdrop" onClick={() => setShowAllModal(false)}>
           <div className="catalog-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -490,7 +476,6 @@ const TestCatalog = () => {
         </div>
       )}
 
-      {/* New Test Case Modal */}
       {newTestCaseModal && (
         <div className="catalog-modal-backdrop" onClick={() => setNewTestCaseModal(false)}>
           <div className="catalog-modal-content" onClick={(e) => e.stopPropagation()}>

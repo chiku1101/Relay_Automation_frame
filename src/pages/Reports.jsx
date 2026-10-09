@@ -140,7 +140,6 @@ const FAILURES_1039 = [
 ];
 
 const Reports = () => {
-  // State
   const [searchQuery, setSearchQuery] = useState('RX1A0231');
   const [deviceChipActive, setDeviceChipActive] = useState(true);
   const [buildChipActive, setBuildChipActive] = useState(true);
@@ -192,7 +191,6 @@ const Reports = () => {
     showToast(`Copied share link to clipboard: relay-qa/reports/run-${selectedRunId.replace('#', '')}`);
   };
 
-  // Filtered runs based on search query
   const filteredRuns = INITIAL_RUNS.filter(r => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -208,7 +206,6 @@ const Reports = () => {
 
   return (
     <div className="reports-page">
-      {/* Search & Filter Bar */}
       <div className="reports-filter-card">
         <div className="reports-search-bar">
           <div className="reports-search-icon">
@@ -259,11 +256,8 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Main 2-Column Grid */}
       <div className="reports-main-layout">
-        {/* Left Column: Runs Table & Run Details */}
         <div className="reports-left-col">
-          {/* Card 1: Runs Table */}
           <div className="reports-card">
             <div className="reports-card-header">
               <div className="reports-card-title">Runs</div>
@@ -324,7 +318,6 @@ const Reports = () => {
             </div>
           </div>
 
-          {/* Card 2: Run Details Card (Run #1039 by default) */}
           <div className="reports-card">
             <div className="reports-card-header" style={{ alignItems: 'flex-start' }}>
               <div>
@@ -340,7 +333,6 @@ const Reports = () => {
               </span>
             </div>
 
-            {/* Run Details Tabs */}
             <div className="run-details-tabs">
               <button 
                 className={`run-tab-btn ${activeTab === 'summary' ? 'active' : ''}`}
@@ -374,7 +366,6 @@ const Reports = () => {
               </button>
             </div>
 
-            {/* Failures Table Content */}
             {activeTab === 'failures' && (
               <div className="reports-table-container">
                 <table className="failures-table">
@@ -441,7 +432,6 @@ const Reports = () => {
               </div>
             )}
 
-            {/* Other Tab Content Placeholders */}
             {activeTab === 'summary' && (
               <div style={{ padding: '16px 0', fontSize: '13px', color: '#4b5563', lineHeight: '1.6' }}>
                 <p><strong>Execution Summary:</strong> Total 345 test cases planned across 8 device test components.</p>
@@ -486,16 +476,13 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Right Column: Build Comparison & Share Run */}
         <div className="reports-right-col">
-          {/* Card 1: Build Comparison */}
           <div className="reports-card">
             <div className="reports-card-header">
               <div className="reports-card-title">Build comparison</div>
               <div className="reports-card-subtitle">Relay X-001 · Nightly</div>
             </div>
 
-            {/* Selectors */}
             <div className="compare-selectors-row">
               <select 
                 className="compare-select" 
@@ -520,7 +507,6 @@ const Reports = () => {
               </select>
             </div>
 
-            {/* 4 Stat Box Grid */}
             <div className="compare-stats-grid">
               <div className="compare-stat-box">
                 <span className="compare-stat-label">Pass rate</span>
@@ -547,7 +533,6 @@ const Reports = () => {
               </div>
             </div>
 
-            {/* Performance and power table */}
             <div className="perf-power-section">
               <div className="perf-power-title">Performance and power</div>
               <table className="perf-power-table">
@@ -598,7 +583,6 @@ const Reports = () => {
             </div>
           </div>
 
-          {/* Card 2: Share run #1039 */}
           <div className="reports-card">
             <div className="reports-card-header">
               <div className="reports-card-title">Share run {selectedRunId}</div>
@@ -701,7 +685,6 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Floating Action Toast */}
       {toastMessage && (
         <div style={{
           position: 'fixed',
@@ -724,7 +707,6 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Evidence Modal (Logs / Screenshot / Video) */}
       {activeEvidenceModal && (
         <div className="reports-modal-backdrop" onClick={() => setActiveEvidenceModal(null)}>
           <div className="reports-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -794,7 +776,6 @@ Stacktrace:
         </div>
       )}
 
-      {/* Create Bug Modal */}
       {createBugModal && (
         <div className="reports-modal-backdrop" onClick={() => setCreateBugModal(null)}>
           <div className="reports-modal-content" onClick={(e) => e.stopPropagation()}>

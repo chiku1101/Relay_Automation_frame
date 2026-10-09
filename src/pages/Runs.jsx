@@ -7,7 +7,6 @@ const Runs = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* 4 Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         <div className="card stat-card">
           <div className="stat-label">Active executions</div>
@@ -31,7 +30,6 @@ const Runs = () => {
         </div>
       </div>
 
-      {/* Action Toolbar */}
       <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {['all', 'running', 'passed', 'failed'].map((item) => (
@@ -66,7 +64,6 @@ const Runs = () => {
         </div>
       </div>
 
-      {/* Runs Table with Clean Empty State */}
       <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
