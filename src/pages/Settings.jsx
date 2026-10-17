@@ -4,23 +4,81 @@ import {
   Cpu, 
   Key, 
   Bell, 
-  HardDrive,
+  HardDrive, 
+  User, 
+  Zap, 
+  Activity, 
+  Flame, 
+  Radio, 
+  Server, 
+  Send, 
+  ExternalLink, 
+  ShieldAlert, 
+  Trash2, 
   Check, 
   Save, 
-  RefreshCw,
-  Copy,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  Send,
-  Trash2,
+  Copy, 
+  Eye, 
+  EyeOff, 
+  RefreshCw, 
+  AlertTriangle, 
   RotateCcw,
-  ShieldAlert,
-  Server,
-  Zap,
-  Radio,
-  ExternalLink
+  Sparkles
 } from 'lucide-react';
+import { MotionSlideMenu } from '@/components/unlumen-ui/motion-slide-menu';
+import { Button, Badge } from '../components/ui';
+
+// Project-specific MotionSlideMenu items tailored to Relay Automation Frame
+const settingsMenuItems = [
+  {
+    id: 'general',
+    label: 'General & Execution',
+    icon: <Sliders />,
+    children: [
+      { id: 'profile', label: 'Workspace Profile', icon: <User /> },
+      { id: 'execution', label: 'Pipeline & Retries', icon: <Zap /> },
+      { id: 'concurrency', label: 'Runner Concurrency', icon: <Activity /> }
+    ]
+  },
+  {
+    id: 'fleet',
+    label: 'Fleet & Hardware',
+    icon: <Cpu />,
+    children: [
+      { id: 'thermal', label: 'Thermal Safety Guard', icon: <Flame /> },
+      { id: 'relays', label: 'USB Relay Automation', icon: <Radio /> },
+      { id: 'nodes', label: 'Registered Benches', icon: <Server /> }
+    ]
+  },
+  {
+    id: 'api',
+    label: 'API & Webhooks',
+    icon: <Key />,
+    children: [
+      { id: 'tokens', label: 'API Bearer Token', icon: <Key /> },
+      { id: 'webhooks', label: 'CI/CD Webhooks', icon: <Send /> },
+      { id: 'services', label: 'Connected Apps', icon: <ExternalLink /> }
+    ]
+  },
+  {
+    id: 'notifications',
+    label: 'Alerts & Escalations',
+    icon: <Bell />,
+    children: [
+      { id: 'channels', label: 'Slack & Email', icon: <Bell /> },
+      { id: 'triggers', label: 'Incident Triggers', icon: <ShieldAlert /> }
+    ]
+  },
+  {
+    id: 'storage',
+    label: 'Storage & Safety',
+    icon: <HardDrive />,
+    children: [
+      { id: 'retention', label: 'Data Retention', icon: <HardDrive /> },
+      { id: 'danger', label: 'Danger Zone', icon: <Trash2 /> }
+    ]
+  }
+];
 
 const INITIAL_SETTINGS = {
   workspaceName: 'Relay Automation Core',
@@ -56,15 +114,15 @@ const INITIAL_SETTINGS = {
 };
 
 const FLEET_NODES = [
-  { id: 'x001', name: 'Relay X-001', bench: 'Bench A-12', ip: '192.168.4.101', status: 'Online', daemon: 'v2.4.1' },
-  { id: 'x002', name: 'Relay X-002', bench: 'Bench A-14 (Soak)', ip: '192.168.4.102', status: 'Soaking', daemon: 'v2.4.1' },
-  { id: 'm001', name: 'Relay M-001', bench: 'Bench B-03', ip: '192.168.4.105', status: 'Offline', daemon: 'v2.4.0' },
-  { id: 'm002', name: 'Relay M-002', bench: 'Bench B-04', ip: '192.168.4.106', status: 'Online', daemon: 'v2.4.1' },
+  { id: 'x001', name: 'Relay X-001', bench: 'Bench A-12', ip: '192.168.4.101', status: 'Online', variant: 'success', daemon: 'v2.4.1' },
+  { id: 'x002', name: 'Relay X-002', bench: 'Bench A-14 (Soak)', ip: '192.168.4.102', status: 'Soaking', variant: 'primary', daemon: 'v2.4.1' },
+  { id: 'm001', name: 'Relay M-001', bench: 'Bench B-03', ip: '192.168.4.105', status: 'Offline', variant: 'danger', daemon: 'v2.4.0' },
+  { id: 'm002', name: 'Relay M-002', bench: 'Bench B-04', ip: '192.168.4.106', status: 'Online', variant: 'success', daemon: 'v2.4.1' },
 ];
 
-const Settings = () => {
-  const [activeTab, setActiveTab] = useState('general');
+export default function Settings() {
   const [form, setForm] = useState(INITIAL_SETTINGS);
+  const [activeId, setActiveId] = useState('profile');
   const [showKey, setShowKey] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [savedRecently, setSavedRecently] = useState(false);
@@ -73,9 +131,11 @@ const Settings = () => {
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3200);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const updateField = (field, val) => {
+    setForm(prev => ({ ...prev, [field]: val }));
   };
 
   const handleSave = () => {
@@ -89,17 +149,6 @@ const Settings = () => {
     showToast('Settings restored to default configuration');
   };
 
-  useEffect(() => {
-    const onSave = () => handleSave();
-    const onReset = () => handleResetDefaults();
-    window.addEventListener('save-workspace-settings', onSave);
-    window.addEventListener('reset-settings-defaults', onReset);
-    return () => {
-      window.removeEventListener('save-workspace-settings', onSave);
-      window.removeEventListener('reset-settings-defaults', onReset);
-    };
-  }, [form]);
-
   const handleCopyKey = () => {
     navigator.clipboard?.writeText(form.apiKey);
     showToast('API token copied to clipboard');
@@ -108,7 +157,7 @@ const Settings = () => {
   const handleRollKey = () => {
     const newKey = 'rl_live_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     setForm(prev => ({ ...prev, apiKey: newKey }));
-    showToast('Rolled API token. Active connections must update headers.');
+    showToast('Rolled API token. Active runners must update headers.');
   };
 
   const handlePingFleet = () => {
@@ -127,917 +176,771 @@ const Settings = () => {
     }, 850);
   };
 
-  const updateField = (field, val) => {
-    setForm(prev => ({ ...prev, [field]: val }));
+  // Map any parent or sub-item click to appropriate active section
+  const handleSelectMenuItem = (item) => {
+    if (item.children && item.children.length > 0) {
+      setActiveId(item.children[0].id);
+    } else {
+      setActiveId(item.id);
+    }
   };
 
-  const tabs = [
-    { id: 'general', label: 'General & Execution', icon: Sliders },
-    { id: 'fleet', label: 'Fleet & Hardware', icon: Cpu },
-    { id: 'api', label: 'API & Integrations', icon: Key },
-    { id: 'notifications', label: 'Alerts & Webhooks', icon: Bell },
-    { id: 'retention', label: 'Storage & Safety', icon: HardDrive },
-  ];
-
   return (
-    <div className="settings-container">
-      <div className="settings-kpi-grid">
-        <div className="card stat-card" style={{ padding: '16px 20px' }}>
-          <div className="flex-between">
-            <span className="stat-label">CLUSTER TIER</span>
-            <Server size={16} color="#2563eb" />
-          </div>
-          <div className="stat-value" style={{ fontSize: '18px', marginTop: '6px' }}>Enterprise Cloud</div>
-          <div className="stat-desc">us-east-relay-01 · 99.98% uptime</div>
-        </div>
-
-        <div className="card stat-card" style={{ padding: '16px 20px' }}>
-          <div className="flex-between">
-            <span className="stat-label">FLEET CAPACITY</span>
-            <Cpu size={16} color="#059669" />
-          </div>
-          <div className="stat-value" style={{ fontSize: '18px', marginTop: '6px' }}>6 Active Runners</div>
-          <div className="stat-desc">{form.maxConcurrentRuns} max concurrent threads</div>
-        </div>
-
-        <div className="card stat-card" style={{ padding: '16px 20px' }}>
-          <div className="flex-between">
-            <span className="stat-label">API SECURITY</span>
-            <Zap size={16} color="#7c3aed" />
-          </div>
-          <div className="stat-value" style={{ fontSize: '18px', marginTop: '6px' }}>Token Live</div>
-          <div className="stat-desc">Last authenticated 3m ago</div>
-        </div>
-
-        <div className="card stat-card" style={{ padding: '16px 20px' }}>
-          <div className="flex-between">
-            <span className="stat-label">STORAGE ALLOCATION</span>
-            <HardDrive size={16} color="#d97706" />
-          </div>
-          <div className="stat-value" style={{ fontSize: '18px', marginTop: '6px' }}>18.4 GB Used</div>
-          <div className="stat-desc">{form.retentionDays} days retention policy</div>
-        </div>
-      </div>
-
-      <div className="settings-tabs-bar">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`settings-tab-btn ${isActive ? 'active' : ''}`}
-            >
-              <Icon size={15} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {activeTab === 'general' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <Sliders size={18} color="#2563eb" />
-                  Workspace Profile & Environment
-                </h3>
-                <p className="settings-card-desc">Configure workspace identity, base branches, and default target devices</p>
-              </div>
-              <span className="badge badge-primary">Core Profile</span>
-            </div>
-
-            <div className="settings-grid-2">
-              <div className="settings-form-group">
-                <label className="settings-label">Workspace Display Name</label>
-                <input
-                  type="text"
-                  value={form.workspaceName}
-                  onChange={(e) => updateField('workspaceName', e.target.value)}
-                  className="settings-input"
-                  placeholder="e.g. Relay Automation Core"
-                />
-                <span className="settings-hint">Shown in Slack alerts, daily digests, and CI report headers</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">Primary Regression Branch</label>
-                <select
-                  value={form.primaryBranch}
-                  onChange={(e) => updateField('primaryBranch', e.target.value)}
-                  className="settings-select"
-                >
-                  <option value="main">main (Production development)</option>
-                  <option value="release/2.4">release/2.4 (Active stabilization)</option>
-                  <option value="staging">staging (Pre-merge integration)</option>
-                </select>
-                <span className="settings-hint">Used for regression baseline comparison</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">Default Target Device Pool</label>
-                <select
-                  value={form.defaultTarget}
-                  onChange={(e) => updateField('defaultTarget', e.target.value)}
-                  className="settings-select"
-                >
-                  <option value="all">All Relay Hardware (A13 + A16 models)</option>
-                  <option value="relay-x">Relay X series only (A16 hardware)</option>
-                  <option value="relay-m">Relay M series only (A13/A16 hardware)</option>
-                </select>
-                <span className="settings-hint">Pre-selected device filter when creating new test plans</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">Timezone & Clock Synchronizer</label>
-                <select
-                  value={form.timezone}
-                  onChange={(e) => updateField('timezone', e.target.value)}
-                  className="settings-select"
-                >
-                  <option value="UTC">UTC (Coordinated Universal Time)</option>
-                  <option value="America/New_York">America/New_York (EST / EDT)</option>
-                  <option value="America/Los_Angeles">America/Los_Angeles (PST / PDT)</option>
-                  <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                  <option value="Europe/London">Europe/London (BST / GMT)</option>
-                </select>
-                <span className="settings-hint">Coordinates scheduled runs and daily soak timeline timestamps</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <Zap size={18} color="#2563eb" />
-                  Execution Pipeline & Retry Policies
-                </h3>
-                <p className="settings-card-desc">Control automated test runner behavior, concurrency limits, and retry logic</p>
-              </div>
-              <span className="badge badge-success">Optimized</span>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Automatic Flaky Failure Retries</div>
-                <div className="settings-switch-desc">Automatically re-queue test cases that fail once to verify whether failures are environmental or true code defects (up to 2 attempts).</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.autoRerun ? 'active' : ''}`}
-                onClick={() => updateField('autoRerun', !form.autoRerun)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Fail-Fast on Critical Setup Steps</div>
-                <div className="settings-switch-desc">Immediately abort entire test plan if initial fastboot flashing, bootloader sanity, or Wi-Fi provisioning checks fail.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.failFast ? 'active' : ''}`}
-                onClick={() => updateField('failFast', !form.failFast)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Capture Artifacts on 100% Passed Runs</div>
-                <div className="settings-switch-desc">Save full logcat, dmesg, and battery metrics even when suites pass cleanly. Disabling saves disk bandwidth.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.collectPassingArtifacts ? 'active' : ''}`}
-                onClick={() => updateField('collectPassingArtifacts', !form.collectPassingArtifacts)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-grid-3" style={{ marginTop: '8px' }}>
-              <div className="settings-form-group">
-                <label className="settings-label">Max Concurrent Runs</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="64"
-                  value={form.maxConcurrentRuns}
-                  onChange={(e) => updateField('maxConcurrentRuns', e.target.value)}
-                  className="settings-input"
-                />
-                <span className="settings-hint">Parallel harness threads</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">Suite Timeout Limit</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="number"
-                    min="5"
-                    max="300"
-                    value={form.timeoutMinutes}
-                    onChange={(e) => updateField('timeoutMinutes', e.target.value)}
-                    className="settings-input"
-                  />
-                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500' }}>min</span>
-                </div>
-                <span className="settings-hint">Aborts hanging adb commands</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">Default Log Verbosity</label>
-                <select
-                  value={form.defaultLogLevel}
-                  onChange={(e) => updateField('defaultLogLevel', e.target.value)}
-                  className="settings-select"
-                >
-                  <option value="debug">DEBUG (Verbose stack trace)</option>
-                  <option value="info">INFO (Standard telemetry)</option>
-                  <option value="warn">WARN / ERROR only</option>
-                </select>
-                <span className="settings-hint">Applied to daemon stdout</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'fleet' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <Cpu size={18} color="#2563eb" />
-                  Hardware Safety & Thermal Guard
-                </h3>
-                <p className="settings-card-desc">Safety rules protecting physical Relay devices from thermal stress and battery degradation</p>
-              </div>
-              <span className="badge badge-warning">Hardware Protection</span>
-            </div>
-
-            <div className="settings-callout warning">
-              <AlertTriangle size={18} color="#b45309" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div>
-                <strong>Active Thermal Protection Protocol:</strong> If device surface sensors exceed the configured limit during a 7-day soak, test automation is automatically paused, screen brightness drops to 0%, and cooling fans activate on bench harness.
-              </div>
-            </div>
-
-            <div className="settings-grid-2">
-              <div className="settings-form-group">
-                <label className="settings-label">
-                  Thermal Emergency Threshold
-                  <span style={{ color: '#dc2626', fontWeight: '700' }}>{form.thermalThreshold} °C</span>
-                </label>
-                <input
-                  type="range"
-                  min="38"
-                  max="52"
-                  step="0.5"
-                  value={form.thermalThreshold}
-                  onChange={(e) => updateField('thermalThreshold', e.target.value)}
-                  style={{ width: '100%', accentColor: '#2563eb' }}
-                />
-                <span className="settings-hint">Threshold triggers safety cool-down cycle (Default: 45.0 °C)</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">
-                  Low Battery Cutoff Threshold
-                  <span style={{ color: '#d97706', fontWeight: '700' }}>{form.batteryCutoff}%</span>
-                </label>
-                <input
-                  type="range"
-                  min="10"
-                  max="40"
-                  value={form.batteryCutoff}
-                  onChange={(e) => updateField('batteryCutoff', e.target.value)}
-                  style={{ width: '100%', accentColor: '#2563eb' }}
-                />
-                <span className="settings-hint">Pauses high-power RF transmission to prevent battery brownouts</span>
-              </div>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Auto USB Relay Power-Cycle</div>
-                <div className="settings-switch-desc">Trigger physical USB relay disconnect/reconnect if adb does not respond for 3 consecutive pings.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.autoPowerCycle ? 'active' : ''}`}
-                onClick={() => updateField('autoPowerCycle', !form.autoPowerCycle)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Auto-Quarantine Unresponsive Nodes</div>
-                <div className="settings-switch-desc">Automatically remove offline or bootlooping devices from active job scheduling queues to prevent queue stall.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.autoQuarantine ? 'active' : ''}`}
-                onClick={() => updateField('autoQuarantine', !form.autoQuarantine)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Nightly OTA Firmware Pre-Warm</div>
-                <div className="settings-switch-desc">Pre-download tomorrow's nightly OTA image directly to the harness local cache at 02:00 AM to eliminate flash latency.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.nightlyOtaPrewarm ? 'active' : ''}`}
-                onClick={() => updateField('nightlyOtaPrewarm', !form.nightlyOtaPrewarm)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-          </div>
-
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <Radio size={18} color="#2563eb" />
-                  Registered Fleet Harness Nodes
-                </h3>
-                <p className="settings-card-desc">Hardware test benches connected to this Relay cluster</p>
-              </div>
-              <button
-                type="button"
-                className="settings-action-pill"
-                onClick={handlePingFleet}
-                disabled={isPingingFleet}
-              >
-                <RefreshCw size={13} className={isPingingFleet ? 'animate-spin' : ''} />
-                {isPingingFleet ? 'Pinging Nodes...' : 'Ping All Nodes'}
-              </button>
-            </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr style={{ background: '#f9fafb' }}>
-                    <th style={{ padding: '10px 16px' }}>DEVICE</th>
-                    <th style={{ padding: '10px 16px' }}>BENCH LOCATION</th>
-                    <th style={{ padding: '10px 16px' }}>IP ADDRESS</th>
-                    <th style={{ padding: '10px 16px' }}>DAEMON VERSION</th>
-                    <th style={{ padding: '10px 16px' }}>STATUS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {FLEET_NODES.map(node => (
-                    <tr key={node.id}>
-                      <td style={{ padding: '12px 16px', fontWeight: '600', color: '#111827' }}>{node.name}</td>
-                      <td style={{ padding: '12px 16px', color: '#4b5563', fontSize: '13px' }}>{node.bench}</td>
-                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: '12px', color: '#374151' }}>{node.ip}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '12px', color: '#6b7280' }}>{node.daemon}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span className={`badge ${
-                          node.status === 'Online' ? 'badge-success' :
-                          node.status === 'Soaking' ? 'badge-primary' : 'badge-danger'
-                        }`}>
-                          {node.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'api' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <Key size={18} color="#2563eb" />
-                  Cluster API Authentication Token
-                </h3>
-                <p className="settings-card-desc">Token used by external CI pipelines (GitHub Actions, Jenkins, GitLab) to trigger test suites and query run status</p>
-              </div>
-              <span className="badge badge-success">Active & Verified</span>
-            </div>
-
-            <div className="settings-form-group">
-              <label className="settings-label">
-                Active Relay API Token
-                <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '400' }}>Prefix: rl_live_</span>
-              </label>
-
-              <div className="settings-token-card">
-                <span className="settings-token-text">
-                  {showKey ? form.apiKey : 'rl_live_••••••••••••••••••••••••••••••••'}
-                </span>
-                <button
-                  type="button"
-                  className="settings-action-pill"
-                  onClick={() => setShowKey(!showKey)}
-                  title={showKey ? 'Hide Token' : 'Show Token'}
-                >
-                  {showKey ? <EyeOff size={13} /> : <Eye size={13} />}
-                  {showKey ? 'Hide' : 'Reveal'}
-                </button>
-                <button
-                  type="button"
-                  className="settings-action-pill"
-                  onClick={handleCopyKey}
-                  title="Copy to Clipboard"
-                >
-                  <Copy size={13} />
-                  Copy
-                </button>
-                <button
-                  type="button"
-                  className="settings-action-pill"
-                  onClick={handleRollKey}
-                  style={{ color: '#dc2626', borderColor: '#fca5a5' }}
-                  title="Rotate Token"
-                >
-                  <RefreshCw size={13} />
-                  Roll Token
-                </button>
-              </div>
-              <span className="settings-hint">Keep this token secure. It grants programmatic execution rights on all registered hardware benches.</span>
-            </div>
-
-            <div className="settings-grid-3" style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <div>
-                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>TOKEN SCOPE</div>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginTop: '2px' }}>read:fleet · write:runs</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>CREATED ON</div>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginTop: '2px' }}>Sep 14, 2026 (24d ago)</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>LAST AUTHENTICATED</div>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#059669', marginTop: '2px' }}>3 mins ago (CI/CD Node)</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <Send size={18} color="#2563eb" />
-                  CI / CD Inbound Webhooks
-                </h3>
-                <p className="settings-card-desc">Endpoints configured in repository webhooks to automatically trigger regressions on new commits</p>
-              </div>
-              <button
-                type="button"
-                className="settings-action-pill"
-                onClick={handleTestWebhook}
-                disabled={isSendingWebhook}
-              >
-                <Send size={13} />
-                {isSendingWebhook ? 'Testing...' : 'Send Test Webhook'}
-              </button>
-            </div>
-
-            <div className="settings-form-group">
-              <label className="settings-label">GitHub Actions Webhook Endpoint</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  readOnly
-                  value="https://relay-ci.corp.internal/api/v2/webhooks/github/push-event"
-                  className="settings-input"
-                  style={{ background: '#f8fafc', fontFamily: 'monospace', fontSize: '12.5px' }}
-                />
-                <button
-                  type="button"
-                  className="settings-action-pill"
-                  onClick={() => {
-                    navigator.clipboard?.writeText('https://relay-ci.corp.internal/api/v2/webhooks/github/push-event');
-                    showToast('Copied GitHub webhook URL');
-                  }}
-                >
-                  <Copy size={13} />
-                </button>
-              </div>
-            </div>
-
-            <div className="settings-form-group">
-              <label className="settings-label">Jenkins Pipeline Webhook Endpoint</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  readOnly
-                  value="https://relay-ci.corp.internal/api/v2/webhooks/jenkins/build-artifact"
-                  className="settings-input"
-                  style={{ background: '#f8fafc', fontFamily: 'monospace', fontSize: '12.5px' }}
-                />
-                <button
-                  type="button"
-                  className="settings-action-pill"
-                  onClick={() => {
-                    navigator.clipboard?.writeText('https://relay-ci.corp.internal/api/v2/webhooks/jenkins/build-artifact');
-                    showToast('Copied Jenkins webhook URL');
-                  }}
-                >
-                  <Copy size={13} />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <ExternalLink size={18} color="#2563eb" />
-                  Connected Services
-                </h3>
-                <p className="settings-card-desc">External observability and issue tracking integrations</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>Slack Bot Integration</div>
-                  <div style={{ fontSize: '12.5px', color: '#6b7280' }}>Connected to workspace: Relay Technologies (#relay-alerts, #relay-qa)</div>
-                </div>
-                <span className="badge badge-success">Connected</span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>Jira Bug Tracker</div>
-                  <div style={{ fontSize: '12.5px', color: '#6b7280' }}>Connected to project: RELAY (Auto-files regressions and logs traces)</div>
-                </div>
-                <span className="badge badge-success">Connected</span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>Datadog / Prometheus Exporter</div>
-                  <div style={{ fontSize: '12.5px', color: '#6b7280' }}>Metrics endpoint active on port :9090/metrics (Scraped every 15s)</div>
-                </div>
-                <span className="badge badge-success">Active</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'notifications' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <Bell size={18} color="#2563eb" />
-                  Notification Channels & Recipients
-                </h3>
-                <p className="settings-card-desc">Where urgent alerts and regression results should be broadcast</p>
-              </div>
-              <span className="badge badge-primary">Alert Channels</span>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Slack Incident Alerts</div>
-                <div className="settings-switch-desc">Post real-time warnings to Slack channels whenever a test run fails or thermal threshold is breached.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.alertSlack ? 'active' : ''}`}
-                onClick={() => updateField('alertSlack', !form.alertSlack)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            {form.alertSlack && (
-              <div className="settings-form-group" style={{ paddingLeft: '16px', borderLeft: '3px solid #2563eb' }}>
-                <label className="settings-label">Target Slack Channel</label>
-                <input
-                  type="text"
-                  value={form.slackChannel}
-                  onChange={(e) => updateField('slackChannel', e.target.value)}
-                  className="settings-input"
-                  style={{ maxWidth: '320px' }}
-                />
-              </div>
-            )}
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Daily Executive Digest Email</div>
-                <div className="settings-switch-desc">Send 08:00 AM EST summary report with pass rate trends, flake radar, and fleet health.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.alertEmail ? 'active' : ''}`}
-                onClick={() => updateField('alertEmail', !form.alertEmail)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            {form.alertEmail && (
-              <div className="settings-form-group" style={{ paddingLeft: '16px', borderLeft: '3px solid #2563eb' }}>
-                <label className="settings-label">Digest Recipient Email</label>
-                <input
-                  type="email"
-                  value={form.emailRecipient}
-                  onChange={(e) => updateField('emailRecipient', e.target.value)}
-                  className="settings-input"
-                  style={{ maxWidth: '360px' }}
-                />
-              </div>
-            )}
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">PagerDuty On-Call Paging</div>
-                <div className="settings-switch-desc">Page on-call QA engineers only if multi-day soak test unexpectedly halts due to infrastructure power failure.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.alertPagerDuty ? 'active' : ''}`}
-                onClick={() => updateField('alertPagerDuty', !form.alertPagerDuty)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-          </div>
-
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <ShieldAlert size={18} color="#2563eb" />
-                  Incident Triggers & Escalation Rules
-                </h3>
-                <p className="settings-card-desc">Define which events trigger immediate engineering notifications</p>
-              </div>
-              <span className="badge badge-warning">High Priority</span>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Hardware Thermal Overheating (&gt; {form.thermalThreshold} °C)</div>
-                <div className="settings-switch-desc">Fires alert if hardware bench sensors remain above thermal threshold for 5 continuous minutes.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.notifyOnThermal ? 'active' : ''}`}
-                onClick={() => updateField('notifyOnThermal', !form.notifyOnThermal)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Unexpected Kernel Panic / Reboot</div>
-                <div className="settings-switch-desc">Fires immediately when Android last_kmsg or pstore shows a kernel panic during test execution.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.notifyOnReboot ? 'active' : ''}`}
-                onClick={() => updateField('notifyOnReboot', !form.notifyOnReboot)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Battery Drain Anomaly (&gt; 8% per hour during Standby)</div>
-                <div className="settings-switch-desc">Alerts power optimization team if wake lock holds CPU during deep sleep test intervals.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.notifyOnDrain ? 'active' : ''}`}
-                onClick={() => updateField('notifyOnDrain', !form.notifyOnDrain)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Application Not Responding (ANR) in com.relay.ptt</div>
-                <div className="settings-switch-desc">Captures traces.txt immediately and attaches stack trace to bug triage report.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.notifyOnAnr ? 'active' : ''}`}
-                onClick={() => updateField('notifyOnAnr', !form.notifyOnAnr)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-
-            <div className="settings-switch-item">
-              <div className="settings-switch-text">
-                <div className="settings-switch-label">Pass Rate Drop vs Previous Baseline (&gt; {form.passRateDropThreshold}%)</div>
-                <div className="settings-switch-desc">Alerts release managers if nightly regression pass rate drops by more than threshold points.</div>
-              </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${form.notifyOnDrop ? 'active' : ''}`}
-                onClick={() => updateField('notifyOnDrop', !form.notifyOnDrop)}
-              >
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'retention' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="settings-section-card">
-            <div className="settings-card-header">
-              <div>
-                <h3 className="settings-card-title">
-                  <HardDrive size={18} color="#2563eb" />
-                  Data Retention & Artifact Storage
-                </h3>
-                <p className="settings-card-desc">Configure retention lifecycle for test logs, bugreports, and screen recording video files</p>
-              </div>
-              <span className="badge badge-primary">Disk Policy</span>
-            </div>
-
-            <div className="settings-grid-3">
-              <div className="settings-form-group">
-                <label className="settings-label">Telemetry Time-Series Retention</label>
-                <select
-                  value={form.retentionDays}
-                  onChange={(e) => updateField('retentionDays', e.target.value)}
-                  className="settings-select"
-                >
-                  <option value="30">30 Days</option>
-                  <option value="90">90 Days (Enterprise default)</option>
-                  <option value="180">180 Days (Half year)</option>
-                  <option value="365">365 Days (Full year archive)</option>
-                </select>
-                <span className="settings-hint">Battery, CPU, and temperature telemetry</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">Video Screen Recordings</label>
-                <select
-                  value={form.videoRetentionDays}
-                  onChange={(e) => updateField('videoRetentionDays', e.target.value)}
-                  className="settings-select"
-                >
-                  <option value="14">14 Days (Recommended)</option>
-                  <option value="30">30 Days</option>
-                  <option value="60">60 Days</option>
-                </select>
-                <span className="settings-hint">MP4 recordings of failing tests</span>
-              </div>
-
-              <div className="settings-form-group">
-                <label className="settings-label">Bugreport Archive Retention</label>
-                <select
-                  defaultValue="90"
-                  className="settings-select"
-                >
-                  <option value="90">90 Days (Standard)</option>
-                  <option value="180">180 Days (Long soak)</option>
-                  <option value="365">365 Days (Permanent)</option>
-                </select>
-                <span className="settings-hint">Compressed .zip bugreports</span>
-              </div>
-            </div>
-
-            <div style={{ marginTop: '10px', background: '#f8fafc', padding: '16px 20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <div className="flex-between" style={{ marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>Cluster Storage Quota: 18.4 GB of 100 GB</span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#2563eb' }}>18.4% used</span>
-              </div>
-              <div className="progress-bar" style={{ height: '8px' }}>
-                <div className="progress-fill" style={{ width: '18.4%' }}></div>
-              </div>
-              <div style={{ display: 'flex', gap: '16px', marginTop: '10px', fontSize: '12px', color: '#6b7280' }}>
-                <span>Logcat & dmesg: <strong>8.2 GB</strong></span>
-                <span>•</span>
-                <span>Video recordings: <strong>6.1 GB</strong></span>
-                <span>•</span>
-                <span>Bugreports: <strong>4.1 GB</strong></span>
-              </div>
-            </div>
-          </div>
-
-          <div className="danger-zone-card">
-            <h3 className="danger-zone-header">
-              <AlertTriangle size={18} color="#dc2626" />
-              Danger Zone & Maintenance
-            </h3>
-            <p style={{ fontSize: '13px', color: '#7f1d1d', margin: 0 }}>
-              Destructive workspace actions. These operations cannot be undone and require administrative privileges.
-            </p>
-
-            <div className="danger-zone-item">
-              <div>
-                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111827' }}>Flush Live Telemetry Cache</div>
-                <div style={{ fontSize: '12.5px', color: '#6b7280' }}>Clears in-memory WebSocket buffers for active soak graphs without deleting historical reports.</div>
-              </div>
-              <button
-                type="button"
-                className="btn-danger-outline"
-                onClick={() => showToast('Flushed telemetry cache (12.4 MB freed)')}
-              >
-                <Trash2 size={13} style={{ display: 'inline', marginRight: '4px' }} />
-                Flush Cache
-              </button>
-            </div>
-
-            <div className="danger-zone-item">
-              <div>
-                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111827' }}>Purge Runs Older Than 90 Days</div>
-                <div style={{ fontSize: '12.5px', color: '#6b7280' }}>Permanently remove archived run logs and screenshots older than 3 months to reclaim disk space.</div>
-              </div>
-              <button
-                type="button"
-                className="btn-danger-outline"
-                onClick={() => showToast('Archival purge completed (3.8 GB reclaimed)')}
-              >
-                <Trash2 size={13} style={{ display: 'inline', marginRight: '4px' }} />
-                Purge Old Runs
-              </button>
-            </div>
-
-            <div className="danger-zone-item">
-              <div>
-                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111827' }}>Reset Workspace to Factory Defaults</div>
-                <div style={{ fontSize: '12.5px', color: '#6b7280' }}>Restore default concurrency limits, alerts, and schedules back to factory profile.</div>
-              </div>
-              <button
-                type="button"
-                className="btn-danger-outline"
-                onClick={handleResetDefaults}
-              >
-                <RotateCcw size={13} style={{ display: 'inline', marginRight: '4px' }} />
-                Reset Defaults
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="card" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f9fafb' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4b5563' }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></span>
-          Workspace configuration synchronized with Relay daemon cluster
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={handleResetDefaults}
-          >
-            Reset Defaults
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleSave}
-          >
-            {savedRecently ? <Check size={15} /> : <Save size={15} />}
-            {savedRecently ? 'Saved!' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
-
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="settings-toast">
-          <Check size={16} color="#10b981" />
+        <div className="fixed bottom-6 right-6 bg-slate-900 border border-slate-700/80 text-white px-4 py-2.5 rounded-lg text-xs font-medium shadow-2xl flex items-center gap-2.5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="size-2 rounded-full bg-blue-500 animate-ping" />
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0d121f] border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-blue-400 font-medium">Relay Automation Core</span>
+            <span className="text-slate-600">/</span>
+            <span className="text-xs text-slate-400 font-mono capitalize">{activeId.replace('-', ' ')}</span>
+          </div>
+          <h1 className="text-lg font-semibold text-slate-100 mt-1">Harness & Workspace Settings</h1>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Badge variant="success" dot pulse>Daemon Active (v2.4.1)</Badge>
+        </div>
+      </div>
+
+      {/* Main Grid: Motion Slide Menu (Left) & Active Settings View (Right) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        {/* Left: MotionSlideMenu tailored to project */}
+        <div className="md:col-span-4 lg:col-span-4 sticky top-4 space-y-4">
+          <MotionSlideMenu
+            items={settingsMenuItems}
+            activeId={activeId}
+            onSelect={handleSelectMenuItem}
+            title="Relay Settings"
+          />
+
+          <div className="p-3.5 bg-[#0d121f] border border-slate-800/80 rounded-2xl text-xs text-slate-400 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-slate-200 font-semibold font-mono text-[10.5px] uppercase tracking-wider">
+              <Sparkles className="size-3.5 text-blue-400" />
+              Hierarchical Navigation
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Drill down into categories to configure hardware relays, thermal guard, runner concurrency, and CI/CD webhooks.
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Selected Category Settings Panel */}
+        <div className="md:col-span-8 lg:col-span-8 space-y-5">
+          {/* 1. Profile / General Profile */}
+          {(activeId === 'profile' || activeId === 'general') && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Sliders className="size-4 text-blue-400" />
+                    Workspace Profile & Environment
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Configure workspace identity, base branches, and default target devices</p>
+                </div>
+                <Badge variant="primary">Core Profile</Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Workspace Display Name</label>
+                  <input
+                    type="text"
+                    value={form.workspaceName}
+                    onChange={(e) => updateField('workspaceName', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                  <span className="text-[10px] text-slate-500 mt-1 block">Shown in Slack alerts, daily digests, and CI report headers</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Primary Regression Branch</label>
+                  <select
+                    value={form.primaryBranch}
+                    onChange={(e) => updateField('primaryBranch', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="main">main (Production development)</option>
+                    <option value="release/2.4">release/2.4 (Active stabilization)</option>
+                    <option value="staging">staging (Pre-merge integration)</option>
+                  </select>
+                  <span className="text-[10px] text-slate-500 mt-1 block">Used for regression baseline comparison</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Default Target Device Pool</label>
+                  <select
+                    value={form.defaultTarget}
+                    onChange={(e) => updateField('defaultTarget', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="all">All Relay Hardware (A13 + A16 models)</option>
+                    <option value="relay-x">Relay X series only (A16 hardware)</option>
+                    <option value="relay-m">Relay M series only (A13/A16 hardware)</option>
+                  </select>
+                  <span className="text-[10px] text-slate-500 mt-1 block">Pre-selected device filter when creating new test plans</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Timezone & Clock Synchronizer</label>
+                  <select
+                    value={form.timezone}
+                    onChange={(e) => updateField('timezone', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="UTC">UTC (Coordinated Universal Time)</option>
+                    <option value="America/New_York">America/New_York (EST / EDT)</option>
+                    <option value="America/Los_Angeles">America/Los_Angeles (PST / PDT)</option>
+                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                  </select>
+                  <span className="text-[10px] text-slate-500 mt-1 block">Coordinates scheduled runs and daily soak timeline timestamps</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 2. Execution & Retries */}
+          {activeId === 'execution' && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Zap className="size-4 text-emerald-400" />
+                    Pipeline & Flaky Retry Rules
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Control automated test runner behavior, concurrency limits, and retry logic</p>
+                </div>
+                <Badge variant="success">Active</Badge>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { field: 'autoRerun', label: 'Automatic Flaky Failure Retries', desc: 'Automatically re-queue test cases that fail once to verify environmental flakiness vs code defects (up to 2 attempts).' },
+                  { field: 'failFast', label: 'Fail-Fast on Critical Setup Steps', desc: 'Immediately abort entire test plan if initial fastboot flashing, bootloader sanity, or Wi-Fi provisioning checks fail.' },
+                  { field: 'collectPassingArtifacts', label: 'Capture Artifacts on 100% Passed Runs', desc: 'Save full logcat, dmesg, and battery metrics even when suites pass cleanly. Disabling saves disk bandwidth.' }
+                ].map(item => (
+                  <div key={item.field} className="p-3 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-medium text-slate-200">{item.label}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">{item.desc}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateField(item.field, !form[item.field])}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        form[item.field] ? 'bg-blue-600' : 'bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          form[item.field] ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 3. Concurrency Limits */}
+          {activeId === 'concurrency' && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Activity className="size-4 text-purple-400" />
+                    Runner Concurrency & Timeouts
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Control execution limits across your physical Relay test bench harness</p>
+                </div>
+                <Badge variant="purple">16 Threads Max</Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Max Concurrent Runs</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="64"
+                    value={form.maxConcurrentRuns}
+                    onChange={(e) => updateField('maxConcurrentRuns', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono"
+                  />
+                  <span className="text-[10px] text-slate-500 mt-1 block">Parallel harness threads</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Suite Timeout Limit</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="5"
+                      max="300"
+                      value={form.timeoutMinutes}
+                      onChange={(e) => updateField('timeoutMinutes', e.target.value)}
+                      className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono"
+                    />
+                    <span className="text-slate-500 font-mono text-xs">min</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-1 block">Aborts hanging adb commands</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Default Log Verbosity</label>
+                  <select
+                    value={form.defaultLogLevel}
+                    onChange={(e) => updateField('defaultLogLevel', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono"
+                  >
+                    <option value="debug">DEBUG (Verbose stack)</option>
+                    <option value="info">INFO (Standard telemetry)</option>
+                    <option value="warn">WARN / ERROR only</option>
+                  </select>
+                  <span className="text-[10px] text-slate-500 mt-1 block">Applied to daemon stdout</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 4. Thermal Guard */}
+          {(activeId === 'thermal' || activeId === 'fleet') && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Flame className="size-4 text-rose-400" />
+                    Hardware Thermal Guard & Battery Cutoff
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Automated safety triggers protecting physical Relay devices from battery degradation</p>
+                </div>
+                <Badge variant="warning">Hardware Protection</Badge>
+              </div>
+
+              <div className="p-3 bg-amber-950/20 border border-amber-900/40 rounded-xl flex items-start gap-3 text-xs text-amber-200">
+                <AlertTriangle className="size-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong>Active Thermal Protection Protocol:</strong> If device surface temperature exceeds limit during soak, test automation automatically pauses, screen brightness drops to 0%, and bench cooling fans turn on.
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2 text-xs">
+                <div>
+                  <div className="flex justify-between text-slate-400 text-xs mb-1">
+                    <span>Thermal Emergency Threshold</span>
+                    <span className="text-rose-400 font-mono font-bold">{form.thermalThreshold} °C</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="38"
+                    max="52"
+                    step="0.5"
+                    value={form.thermalThreshold}
+                    onChange={(e) => updateField('thermalThreshold', e.target.value)}
+                    className="w-full accent-blue-500"
+                  />
+                  <span className="text-[10.5px] text-slate-500 block mt-1">Triggers emergency cool-down cycle (Default: 45.0 °C)</span>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-slate-400 text-xs mb-1">
+                    <span>Low Battery Cutoff Threshold</span>
+                    <span className="text-amber-400 font-mono font-bold">{form.batteryCutoff}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="40"
+                    value={form.batteryCutoff}
+                    onChange={(e) => updateField('batteryCutoff', e.target.value)}
+                    className="w-full accent-blue-500"
+                  />
+                  <span className="text-[10.5px] text-slate-500 block mt-1">Pauses high-power RF transmission to prevent brownouts</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 5. Relays Automation */}
+          {activeId === 'relays' && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Radio className="size-4 text-blue-400" />
+                    USB Relay Power-Cycle & Quarantine
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Physical USB relay disconnect/reconnect and automated node quarantine</p>
+                </div>
+                <Badge variant="primary">Relay Matrix</Badge>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { field: 'autoPowerCycle', label: 'Auto USB Relay Power-Cycle', desc: 'Trigger physical USB relay disconnect/reconnect if adb does not respond for 3 consecutive pings.' },
+                  { field: 'autoQuarantine', label: 'Auto-Quarantine Unresponsive Nodes', desc: 'Automatically remove offline or bootlooping devices from active job scheduling queues.' },
+                  { field: 'nightlyOtaPrewarm', label: 'Nightly OTA Firmware Pre-Warm', desc: 'Pre-download tomorrow\'s nightly OTA image directly to the harness local cache at 02:00 AM.' }
+                ].map(item => (
+                  <div key={item.field} className="p-3 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-medium text-slate-200">{item.label}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">{item.desc}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateField(item.field, !form[item.field])}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        form[item.field] ? 'bg-blue-600' : 'bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          form[item.field] ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 6. Registered Benches */}
+          {activeId === 'nodes' && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Server className="size-4 text-purple-400" />
+                    Registered Fleet Harness Nodes
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Physical hardware test benches connected to this Relay cluster</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={RefreshCw}
+                  onClick={handlePingFleet}
+                  loading={isPingingFleet}
+                >
+                  Ping All Nodes
+                </Button>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-800">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#090d16] border-b border-slate-800 text-slate-400 font-mono text-[11px] uppercase tracking-wider">
+                    <tr>
+                      <th className="py-2.5 px-3">Device Node</th>
+                      <th className="py-2.5 px-3">Bench Location</th>
+                      <th className="py-2.5 px-3">IP Address</th>
+                      <th className="py-2.5 px-3">Daemon</th>
+                      <th className="py-2.5 px-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-mono text-[11.5px]">
+                    {FLEET_NODES.map(node => (
+                      <tr key={node.id} className="hover:bg-slate-800/20">
+                        <td className="py-3 px-3 font-sans font-medium text-slate-200">{node.name}</td>
+                        <td className="py-3 px-3 text-slate-400">{node.bench}</td>
+                        <td className="py-3 px-3 text-blue-400">{node.ip}</td>
+                        <td className="py-3 px-3 text-slate-400">{node.daemon}</td>
+                        <td className="py-3 px-3">
+                          <Badge variant={node.variant} dot pulse={node.status === 'Online'}>
+                            {node.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 7. API Bearer Token */}
+          {(activeId === 'tokens' || activeId === 'api') && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Key className="size-4 text-blue-400" />
+                    Cluster API Authentication Token
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Token used by external CI pipelines (GitHub Actions, Jenkins, GitLab) to trigger test suites</p>
+                </div>
+                <Badge variant="success" dot pulse>Active & Verified</Badge>
+              </div>
+
+              <div className="p-4 bg-[#111622] rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="font-mono text-xs text-slate-200 truncate">
+                  {showKey ? form.apiKey : 'rl_live_••••••••••••••••••••••••••••••••'}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button variant="ghost" size="sm" icon={showKey ? EyeOff : Eye} onClick={() => setShowKey(!showKey)}>
+                    {showKey ? 'Hide' : 'Reveal'}
+                  </Button>
+                  <Button variant="outline" size="sm" icon={Copy} onClick={handleCopyKey}>
+                    Copy
+                  </Button>
+                  <Button variant="danger" size="sm" icon={RefreshCw} onClick={handleRollKey}>
+                    Roll Token
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-[#111622]/40 rounded-xl border border-slate-800/80 font-mono text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase block font-medium">Token Scope</span>
+                  <span className="text-slate-200 font-semibold mt-0.5 block">read:fleet · write:runs</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase block font-medium">Created On</span>
+                  <span className="text-slate-200 mt-0.5 block">Sep 14, 2026 (24d ago)</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase block font-medium">Last Authenticated</span>
+                  <span className="text-emerald-400 font-semibold mt-0.5 block">3 mins ago (CI Node)</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 8. Webhooks */}
+          {activeId === 'webhooks' && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Send className="size-4 text-purple-400" />
+                    CI / CD Inbound Webhooks
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Endpoints configured in repository webhooks to automatically trigger regressions</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={Send}
+                  onClick={handleTestWebhook}
+                  loading={isSendingWebhook}
+                >
+                  Send Test Webhook
+                </Button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">GitHub Actions Webhook Endpoint</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value="https://relay-ci.corp.internal/api/v2/webhooks/github/push-event"
+                      className="flex-1 bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-300"
+                    />
+                    <Button variant="outline" size="sm" icon={Copy} onClick={() => {
+                      navigator.clipboard?.writeText('https://relay-ci.corp.internal/api/v2/webhooks/github/push-event');
+                      showToast('Copied GitHub webhook URL');
+                    }} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Jenkins Pipeline Webhook Endpoint</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value="https://relay-ci.corp.internal/api/v2/webhooks/jenkins/build-artifact"
+                      className="flex-1 bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-300"
+                    />
+                    <Button variant="outline" size="sm" icon={Copy} onClick={() => {
+                      navigator.clipboard?.writeText('https://relay-ci.corp.internal/api/v2/webhooks/jenkins/build-artifact');
+                      showToast('Copied Jenkins webhook URL');
+                    }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 9. Connected Services */}
+          {activeId === 'services' && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+              <div className="pb-3 border-b border-slate-800">
+                <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                  <ExternalLink className="size-4 text-emerald-400" />
+                  Connected Services & Integrations
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">External issue trackers and telemetry exporters</p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3.5 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">Slack Bot Integration</div>
+                    <div className="text-[11px] text-slate-400">Relay Technologies (#relay-alerts, #relay-qa)</div>
+                  </div>
+                  <Badge variant="success">Connected</Badge>
+                </div>
+
+                <div className="p-3.5 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">Jira Bug Tracker</div>
+                    <div className="text-[11px] text-slate-400">Auto-files regressions into project RELAY</div>
+                  </div>
+                  <Badge variant="success">Connected</Badge>
+                </div>
+
+                <div className="p-3.5 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">Prometheus / Datadog Exporter</div>
+                    <div className="text-[11px] text-slate-400">Metrics active on port :9090/metrics (15s scrape interval)</div>
+                  </div>
+                  <Badge variant="primary">Active</Badge>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 10. Slack & Email Channels */}
+          {(activeId === 'channels' || activeId === 'notifications') && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <Bell className="size-4 text-amber-400" />
+                    Notification Channels & Recipients
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Where urgent alerts and regression results should be broadcast</p>
+                </div>
+                <Badge variant="primary">Alert Channels</Badge>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-medium text-slate-200">Slack Incident Alerts</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Post real-time warnings whenever a test run fails or thermal threshold is breached.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateField('alertSlack', !form.alertSlack)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      form.alertSlack ? 'bg-blue-600' : 'bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        form.alertSlack ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {form.alertSlack && (
+                  <div className="p-3 bg-[#090d16] border border-slate-800 rounded-xl text-xs space-y-1">
+                    <label className="text-[11px] font-medium text-slate-400 block">Target Slack Channel</label>
+                    <input
+                      type="text"
+                      value={form.slackChannel}
+                      onChange={(e) => updateField('slackChannel', e.target.value)}
+                      className="w-full max-w-sm bg-[#111622] border border-slate-800 rounded-lg px-2.5 py-1.5 font-mono text-slate-200"
+                    />
+                  </div>
+                )}
+
+                <div className="p-3 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-medium text-slate-200">Daily Executive Digest Email</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Send 08:00 AM EST summary report with pass rate trends, flake radar, and fleet health.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateField('alertEmail', !form.alertEmail)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      form.alertEmail ? 'bg-blue-600' : 'bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        form.alertEmail ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 11. Incident Triggers */}
+          {activeId === 'triggers' && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <ShieldAlert className="size-4 text-rose-400" />
+                    Critical Incident Escalation Rules
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Events that trigger immediate pager escalation and automated bug triage</p>
+                </div>
+                <Badge variant="danger">Escalation Policy</Badge>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { field: 'notifyOnThermal', label: `Thermal Overheating (> ${form.thermalThreshold} °C)`, desc: 'Fires alert if bench sensors remain above thermal threshold for 5 continuous minutes.' },
+                  { field: 'notifyOnReboot', label: 'Kernel Panic & Unexpected Reboots', desc: 'Fires immediately when Android last_kmsg or pstore registers a kernel panic during test execution.' },
+                  { field: 'notifyOnAnr', label: 'ANR in com.relay.ptt Dispatch Daemon', desc: 'Captures traces.txt immediately and attaches thread stack dumps to bug triage reports.' },
+                  { field: 'notifyOnDrop', label: `Pass Rate Drop vs Baseline (> ${form.passRateDropThreshold}%)`, desc: 'Alerts release managers if nightly regression pass rate drops by more than threshold points.' }
+                ].map(rule => (
+                  <div key={rule.field} className="p-3 bg-[#111622]/60 rounded-xl border border-slate-800 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-medium text-slate-200">{rule.label}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">{rule.desc}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateField(rule.field, !form[rule.field])}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        form[rule.field] ? 'bg-blue-600' : 'bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          form[rule.field] ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 12. Retention Policy */}
+          {(activeId === 'retention' || activeId === 'storage') && (
+            <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <HardDrive className="size-4 text-blue-400" />
+                    Data Retention & Artifact Storage
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Configure retention lifecycle for test logs, bugreports, and screen recording video files</p>
+                </div>
+                <Badge variant="primary">Disk Policy</Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Telemetry Time-Series</label>
+                  <select
+                    value={form.retentionDays}
+                    onChange={(e) => updateField('retentionDays', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"
+                  >
+                    <option value="30">30 Days</option>
+                    <option value="90">90 Days (Enterprise default)</option>
+                    <option value="180">180 Days (Half year)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Video Screen Recordings</label>
+                  <select
+                    value={form.videoRetentionDays}
+                    onChange={(e) => updateField('videoRetentionDays', e.target.value)}
+                    className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"
+                  >
+                    <option value="14">14 Days (Recommended)</option>
+                    <option value="30">30 Days</option>
+                    <option value="60">60 Days</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Bugreport Archives</label>
+                  <select defaultValue="90" className="w-full bg-[#111622] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+                    <option value="90">90 Days (Standard)</option>
+                    <option value="180">180 Days (Long soak)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="p-4 bg-[#111622]/60 rounded-xl border border-slate-800 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-semibold text-slate-200">Cluster Storage: 18.4 GB of 100 GB</span>
+                  <span className="font-mono text-blue-400 font-bold">18.4% used</span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '18.4%' }} />
+                </div>
+                <div className="flex gap-4 text-[11px] text-slate-500 font-mono pt-1">
+                  <span>Logcat: 8.2 GB</span>
+                  <span>•</span>
+                  <span>Videos: 6.1 GB</span>
+                  <span>•</span>
+                  <span>Bugreports: 4.1 GB</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 13. Danger Zone */}
+          {activeId === 'danger' && (
+            <div className="bg-rose-950/20 border border-rose-900/40 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
+              <h3 className="text-base font-semibold text-rose-300 flex items-center gap-2">
+                <AlertTriangle className="size-4 text-rose-400" />
+                Danger Zone & Maintenance
+              </h3>
+              <p className="text-xs text-rose-300/80">
+                Destructive workspace actions. These operations cannot be undone and require administrative privileges.
+              </p>
+
+              <div className="space-y-3">
+                {[
+                  { title: 'Flush Live Telemetry Cache', desc: 'Clears in-memory WebSocket buffers for active soak graphs without deleting historical reports.', btn: 'Flush Cache', act: () => showToast('Flushed telemetry cache (12.4 MB freed)') },
+                  { title: 'Purge Runs Older Than 90 Days', desc: 'Permanently remove archived run logs and screenshots older than 3 months to reclaim disk space.', btn: 'Purge Old Runs', act: () => showToast('Archival purge completed (3.8 GB reclaimed)') },
+                  { title: 'Reset Workspace to Factory Defaults', desc: 'Restore default concurrency limits, alerts, and schedules back to factory profile.', btn: 'Reset Defaults', act: handleResetDefaults }
+                ].map(action => (
+                  <div key={action.title} className="p-3.5 bg-[#0d121f] rounded-xl border border-rose-900/30 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-200">{action.title}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">{action.desc}</div>
+                    </div>
+                    <Button variant="danger" size="sm" onClick={action.act} className="shrink-0">
+                      {action.btn}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Actions Bar */}
+          <div className="bg-[#0d121f] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              Synced with Relay daemon cluster
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={handleResetDefaults}>
+                Reset Defaults
+              </Button>
+              <Button variant="primary" size="sm" icon={savedRecently ? Check : Save} onClick={handleSave}>
+                {savedRecently ? 'Saved!' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default Settings;
+}

@@ -1,4 +1,23 @@
 import React, { useState } from 'react';
+import { 
+  Activity, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Clock, 
+  Download, 
+  ExternalLink, 
+  FileText, 
+  Flame, 
+  Layers, 
+  Plus, 
+  Radio, 
+  RefreshCw, 
+  ShieldAlert, 
+  Terminal, 
+  Wifi, 
+  X,
+  Zap
+} from 'lucide-react';
 
 const SAMPLE_LOGS = {
   logcat: {
@@ -61,76 +80,52 @@ const SAMPLE_LOGS = {
     ]
   },
   last_kmsg: {
-    title: '/sys/fs/pstore/console-ramoops (last_kmsg)',
-    timestamp: '2026-09-25 02:34:55.000',
+    title: 'last_kmsg (CPU3 soft lockup trace)',
+    timestamp: '2026-09-25 02:34:55.100',
     lines: [
-      { type: 'info', text: '[166415.820120] qcom,cpubw: bw_mon update avg: 3120 MB/s' },
-      { type: 'warn', text: '[166420.104230] watchdog: BUG: soft lockup - CPU#3 stuck for 22s! [PttAudioEngine:618]' },
-      { type: 'err', text: '[166424.108420] watchdog: BUG: soft lockup - CPU#3 stuck for 26s! [PttAudioEngine:618]' },
-      { type: 'err', text: '[166424.108450] Kernel panic - not syncing: softlockup: hung tasks' },
-      { type: 'err', text: '[166424.108480] SMP: stopping secondary CPUs' },
-      { type: 'warn', text: '[166424.109100] ipi_cpu_stop: CPU0 stopped' },
-      { type: 'warn', text: '[166424.109120] ipi_cpu_stop: CPU1 stopped' },
-      { type: 'warn', text: '[166424.109130] ipi_cpu_stop: CPU2 stopped' },
-      { type: 'info', text: '[166424.110200] ramoops: console-ramoops dump written (8421 bytes)' }
+      { type: 'info', text: '02:34:20.100 [sched] CPU3: scheduling PttAudioEngine task' },
+      { type: 'warn', text: '02:34:40.102 [lockup] watchdog: BUG: soft lockup - CPU#3 stuck for 22s! [PttAudioEngine:618]' },
+      { type: 'err', text: '02:34:44.103 [lockup] Modules linked in: wlan(O) rmnet_perf(O) audio_prm(O)' },
+      { type: 'err', text: '02:34:48.104 [panic] Kernel panic - not syncing: softlockup: hung tasks' }
     ]
   },
   traces_service: {
-    title: 'ANR traces.txt · com.relay.ptt (service timeout)',
-    timestamp: '2026-09-24 06:24:18.000',
+    title: 'traces.txt (service timeout in PttKeepalive)',
+    timestamp: '2026-09-24 06:24:11.890',
     lines: [
-      { type: 'err', text: '----- pid 3102 at 2026-09-24 06:24:18 -----' },
-      { type: 'err', text: 'Cmd line: com.relay.ptt' },
-      { type: 'warn', text: '"main" prio=5 tid=1 Native' },
-      { type: 'warn', text: '  waiting on condition: com.relay.ptt.service.PttBackgroundSyncService' },
-      { type: 'text', text: '  at android.os.MessageQueue.nativePollOnce(Native Method)' },
-      { type: 'text', text: '  at android.os.MessageQueue.next(MessageQueue.java:335)' },
-      { type: 'text', text: '  at android.os.Looper.loopOnce(Looper.java:161)' },
-      { type: 'err', text: 'Reason: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{90fae44 u0 com.relay.ptt/.service.PttBackgroundSyncService}' }
+      { type: 'warn', text: '06:24:08.100 [ActivityManager] Timeout executing service: ServiceRecord{4a180 com.relay.ptt/.service.PttKeepaliveService}' },
+      { type: 'err', text: '06:24:11.890 [ANRManager] ANR in com.relay.ptt: Broadcast of Intent { act=com.relay.action.HEARTBEAT }' }
     ]
   }
 };
 
 const Monitoring = () => {
+  const [activeModal, setActiveModal] = useState(null);
+  const [modalLogKey, setModalLogKey] = useState('logcat');
+  const [toastMessage, setToastMessage] = useState('');
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
   const [alertRules, setAlertRules] = useState([
-    { id: 1, name: 'Unexpected reboot', desc: 'Collect bugreport · email + Slack', enabled: true },
-    { id: 2, name: 'Temperature > 45 °C for 5 min', desc: 'Slack #relay-qa', enabled: true },
-    { id: 3, name: 'Battery drain > 8% per hour', desc: 'Slack #relay-qa', enabled: true },
-    { id: 4, name: 'Memory growth > 50 MB in 24 h', desc: 'Create finding', enabled: true },
-    { id: 5, name: 'Device offline > 10 min', desc: 'Power-cycle, then email', enabled: true }
+    { id: 1, name: 'Reboot occurs', desc: 'Slack #relay-hw-alerts, page oncall', enabled: true },
+    { id: 2, name: 'ANR or crash in com.relay.*', desc: 'File bug, attach bugreport', enabled: true },
+    { id: 3, name: 'Temperature > 45 °C for > 5 min', desc: 'Slack #relay-hw-alerts', enabled: true },
+    { id: 4, name: 'Battery drop > 15% / h while charging', desc: 'Slack #relay-hw-alerts', enabled: false },
+    { id: 5, name: 'Wi-Fi disconnect during idle', desc: 'Log event only', enabled: true }
   ]);
 
-  const [activeModal, setActiveModal] = useState(null);
-  const [modalLogKey, setModalLogKey] = useState('bugreport');
-  const [toastMessage, setToastMessage] = useState(null);
-  const [newRuleName, setNewRuleName] = useState('');
-  const [newRuleDesc, setNewRuleDesc] = useState('');
-  const [hoveredPoint, setHoveredPoint] = useState(null);
   const [bugForm, setBugForm] = useState({
-    title: 'System PSS grows about 16 MB/day on build 0923',
+    title: '[Soak Defect] System PSS leak +16MB/day during continuous PTT loop',
     component: 'com.relay.ptt',
     severity: 'High - P2',
-    notes: 'Detected in Soak #1045 Day 3. Suspected leak in audio packet buffer cache.'
+    notes: 'Observed continuous linear slope in PSS during 7-day soak on Relay X-002. Build 2.4.0 (0923).'
   });
+
+  const [newRuleName, setNewRuleName] = useState('');
+  const [newRuleDesc, setNewRuleDesc] = useState('');
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3200);
-  };
-
-  const toggleRule = (id) => {
-    setAlertRules(prev =>
-      prev.map(rule => {
-        if (rule.id === id) {
-          const nextState = !rule.enabled;
-          showToast(`Rule "${rule.name}" is now ${nextState ? 'enabled' : 'disabled'}`);
-          return { ...rule, enabled: nextState };
-        }
-        return rule;
-      })
-    );
+    setTimeout(() => setToastMessage(''), 3000);
   };
 
   const openLogViewer = (key) => {
@@ -138,104 +133,133 @@ const Monitoring = () => {
     setActiveModal('logs');
   };
 
+  const toggleRule = (id) => {
+    setAlertRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+    showToast('Alert rule preference updated');
+  };
+
   const handleDownloadAllLogs = () => {
-    showToast('Preparing download package: Relay-X-002-Soak-1045-logs.tar.gz (4.1 GB)...');
+    showToast('Preparing 4.1 GB telemetry archive (logcat, bugreport, traces.txt)...');
+    setTimeout(() => {
+      showToast('Download started: relay-soak-x002-telemetry-archive.tar.gz');
+    }, 1200);
+  };
+
+  const handleCreateBugSubmit = (e) => {
+    e.preventDefault();
+    setActiveModal(null);
+    showToast(`Created Jira Defect RELAY-4921: "${bugForm.title}"`);
   };
 
   const handleAddRuleSubmit = (e) => {
     e.preventDefault();
     if (!newRuleName.trim()) return;
     const newRule = {
-      id: Date.now(),
-      name: newRuleName.trim(),
-      desc: newRuleDesc.trim() || 'Slack #relay-qa',
+      id: alertRules.length + 1,
+      name: newRuleName,
+      desc: newRuleDesc || 'Custom alert channel',
       enabled: true
     };
-    setAlertRules(prev => [...prev, newRule]);
+    setAlertRules([...alertRules, newRule]);
+    setActiveModal(null);
     setNewRuleName('');
     setNewRuleDesc('');
-    setActiveModal(null);
-    showToast(`Added alert rule: "${newRule.name}"`);
-  };
-
-  const handleCreateBugSubmit = (e) => {
-    e.preventDefault();
-    setActiveModal(null);
-    showToast(`Created Jira issue RELAY-4819: "${bugForm.title}"`);
+    showToast('New hardware alert rule enabled');
   };
 
   const timelineEvents = [
-    { id: 'anr1', x: 252, label: 'ANR', type: 'anr', logKey: 'traces_service', time: 'Sep 24 06:24', desc: 'ANR in com.relay.ptt (service timeout)' },
-    { id: 'thermal', x: 320, label: 'H Temp', type: 'thermal', logKey: 'thermal', time: 'Sep 25 05:17', desc: 'Peak 46.2 °C above 45 °C for 6 min' },
+    { id: 'anr1', x: 232, label: 'ANR', type: 'anr', logKey: 'traces_service', time: 'Sep 24 06:24', desc: 'ANR in com.relay.ptt (service timeout)' },
+    { id: 'reboot', x: 300, label: 'Reboot', type: 'reboot', logKey: 'bugreport', time: 'Sep 25 02:52', desc: 'Watchdog bark: CPU3 stuck in soft lockup' },
+    { id: 'thermal', x: 318, label: '46.2°C', type: 'thermal', logKey: 'thermal', time: 'Sep 25 05:17', desc: 'Temperature peaked at 46.2 °C' },
     { id: 'anr2', x: 358, label: 'ANR', type: 'anr', logKey: 'traces_input', time: 'Sep 25 19:36', desc: 'ANR in com.relay.ptt (input dispatch)' }
   ];
 
   return (
-    <div className="monitoring-page">
-      <div className="monitoring-stats-grid">
-        <div className="monitoring-stat-card">
-          <div className="monitoring-stat-label">Uptime since last boot</div>
-          <div className="monitoring-stat-value">23 h 50 m</div>
-          <div className="monitoring-stat-desc">Soak elapsed 2 d 4 h</div>
+    <div className="space-y-6">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-slate-100 px-4 py-2.5 rounded-xl text-xs font-medium shadow-2xl border border-slate-700 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="size-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Top Telemetry Stat Cards Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-lg">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Uptime since boot</div>
+          <div className="text-xl font-bold font-mono text-slate-100 my-1">23 h 50 m</div>
+          <div className="text-[11px] font-mono text-slate-500">Soak elapsed 2 d 4 h</div>
         </div>
 
-        <div className="monitoring-stat-card">
-          <div className="monitoring-stat-label">Unexpected reboots</div>
-          <div className="monitoring-stat-value danger">1</div>
-          <div className="monitoring-stat-desc">Sep 25 02:52 · watchdog</div>
+        <div className="bg-[#0e1422] border border-rose-500/30 rounded-xl p-4 flex flex-col justify-between shadow-lg">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-rose-400 font-semibold">Unexpected Reboots</div>
+          <div className="text-xl font-bold font-mono text-rose-400 my-1">1</div>
+          <div className="text-[11px] font-mono text-rose-300/80">Sep 25 02:52 · watchdog</div>
         </div>
 
-        <div className="monitoring-stat-card">
-          <div className="monitoring-stat-label">ANRs / crashes</div>
-          <div className="monitoring-stat-value">2 / 0</div>
-          <div className="monitoring-stat-desc">Both in com.relay.ptt</div>
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-lg">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">ANRs / Crashes</div>
+          <div className="text-xl font-bold font-mono text-amber-400 my-1">2 / 0</div>
+          <div className="text-[11px] font-mono text-slate-500">Both in com.relay.ptt</div>
         </div>
 
-        <div className="monitoring-stat-card">
-          <div className="monitoring-stat-label">Peak temperature</div>
-          <div className="monitoring-stat-value">46.2 °C</div>
-          <div className="monitoring-stat-desc warning-text">Above 45 °C for 6 min</div>
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-lg">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Peak Temperature</div>
+          <div className="text-xl font-bold font-mono text-amber-400 my-1">46.2 °C</div>
+          <div className="text-[11px] font-mono text-amber-400/80 font-semibold">Above 45 °C for 6 min</div>
         </div>
 
-        <div className="monitoring-stat-card">
-          <div className="monitoring-stat-label">Memory trend</div>
-          <div className="monitoring-stat-value">+16 MB/day</div>
-          <div className="monitoring-stat-desc warning-text">Possible leak</div>
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-lg">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Memory Trend</div>
+          <div className="text-xl font-bold font-mono text-amber-400 my-1">+16 MB/day</div>
+          <div className="text-[11px] font-mono text-amber-400/80 font-semibold">Possible slow leak</div>
         </div>
 
-        <div className="monitoring-stat-card">
-          <div className="monitoring-stat-label">Wi-Fi disconnects</div>
-          <div className="monitoring-stat-value">7</div>
-          <div className="monitoring-stat-desc">5 during idle</div>
+        <div className="bg-[#0e1422] border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between shadow-lg">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Wi-Fi Disconnects</div>
+          <div className="text-xl font-bold font-mono text-slate-100 my-1">7</div>
+          <div className="text-[11px] font-mono text-slate-500">5 during idle sleep</div>
         </div>
       </div>
 
-      <div className="monitoring-main-layout">
-        <div className="monitoring-left-col">
-          <div className="monitoring-card">
-            <div className="monitoring-card-header">
-              <div className="monitoring-card-title">
-                Soak timeline · Sep 23 22:00 – Sep 30 22:00
+      {/* Main 2-Column Telemetry Console */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Left Column: Timeline Chart & Automated Findings (8 cols) */}
+        <div className="lg:col-span-8 space-y-5">
+          {/* Timeline Chart Card */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                  <Activity className="size-4 text-blue-400" />
+                  Soak Timeline Matrix · Sep 23 22:00 – Sep 30 22:00
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">Continuous telemetry sampling across memory PSS, quiet-therm, and battery rail.</p>
               </div>
-              <div className="timeline-legend">
-                <div className="legend-item">
-                  <span className="legend-line blue-solid"></span>
-                  <span>Build 0923 (now)</span>
+
+              {/* Legend */}
+              <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-0.5 bg-blue-500 rounded" />
+                  <span>Build 0923 (Active)</span>
                 </div>
-                <div className="legend-item">
-                  <span className="legend-line slate-dashed"></span>
-                  <span>Build 0919 soak</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-0.5 border-t border-dashed border-slate-500" />
+                  <span>Build 0919 Baseline</span>
                 </div>
-                <div className="legend-item">
-                  <span className="legend-line red-dotted"></span>
-                  <span>Threshold</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-0.5 border-t border-dotted border-rose-500" />
+                  <span>Safety Limit</span>
                 </div>
               </div>
             </div>
 
-            <div className="timeline-chart-wrapper">
+            {/* SVG Timeline Chart */}
+            <div className="w-full overflow-x-auto bg-slate-950 border border-slate-800/80 rounded-xl p-2">
               <svg 
-                className="timeline-svg-container" 
+                className="w-full min-w-[700px] h-72" 
                 viewBox="0 0 880 430"
                 onMouseMove={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -254,497 +278,341 @@ const Monitoring = () => {
                 }}
                 onMouseLeave={() => setHoveredPoint(null)}
               >
-                <defs>
-                  <linearGradient id="futureGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f8fafc" stopOpacity="0.85" />
-                    <stop offset="100%" stopColor="#f1f5f9" stopOpacity="0.85" />
-                  </linearGradient>
-                </defs>
+                {/* Y Axis Guide Lines */}
+                <line x1="160" y1="20" x2="840" y2="20" stroke="#1e293b" strokeDasharray="3 3" />
+                <line x1="160" y1="100" x2="840" y2="100" stroke="#1e293b" strokeDasharray="3 3" />
+                <line x1="160" y1="180" x2="840" y2="180" stroke="#1e293b" strokeDasharray="3 3" />
+                <line x1="160" y1="260" x2="840" y2="260" stroke="#1e293b" strokeDasharray="3 3" />
+                <line x1="160" y1="340" x2="840" y2="340" stroke="#1e293b" strokeDasharray="3 3" />
 
-                <line x1="160" y1="95" x2="840" y2="95" stroke="#f1f5f9" strokeWidth="1" />
-                <line x1="160" y1="175" x2="840" y2="175" stroke="#f1f5f9" strokeWidth="1" />
-                <line x1="160" y1="255" x2="840" y2="255" stroke="#f1f5f9" strokeWidth="1" />
-                <line x1="160" y1="335" x2="840" y2="335" stroke="#f1f5f9" strokeWidth="1" />
-                <line x1="160" y1="370" x2="840" y2="370" stroke="#f1f5f9" strokeWidth="1" />
-                <line x1="160" y1="395" x2="840" y2="395" stroke="#e2e8f0" strokeWidth="1" />
+                {/* Y Axis Labels */}
+                <text x="140" y="55" fill="#94a3b8" fontSize="11" fontWeight="600" textAnchor="end" fontFamily="var(--font-mono)">Memory (PSS)</text>
+                <text x="140" y="70" fill="#64748b" fontSize="10" textAnchor="end" fontFamily="var(--font-mono)">MB / day</text>
+                
+                <text x="140" y="135" fill="#94a3b8" fontSize="11" fontWeight="600" textAnchor="end" fontFamily="var(--font-mono)">quiet-therm</text>
+                <text x="140" y="150" fill="#64748b" fontSize="10" textAnchor="end" fontFamily="var(--font-mono)">°C sensor</text>
 
-                {[0, 1, 2, 3, 4, 5, 6].map((i) => {
-                  const gx = 160 + (i * (680 / 6));
-                  return (
-                    <g key={i}>
-                      <line x1={gx} y1="20" x2={gx} y2="395" stroke="#f8fafc" strokeWidth="1" />
-                      <line x1={gx} y1="395" x2={gx} y2="400" stroke="#cbd5e1" strokeWidth="1" />
-                    </g>
-                  );
-                })}
+                <text x="140" y="215" fill="#94a3b8" fontSize="11" fontWeight="600" textAnchor="end" fontFamily="var(--font-mono)">Battery SOC</text>
+                <text x="140" y="230" fill="#64748b" fontSize="10" textAnchor="end" fontFamily="var(--font-mono)">% remaining</text>
 
-                <text x="24" y="44" fill="#6b7280" fontSize="12" fontWeight="500">Battery</text>
-                <text x="24" y="64" fill="#111827" fontSize="15" fontWeight="700">64%</text>
+                <text x="140" y="295" fill="#94a3b8" fontSize="11" fontWeight="600" textAnchor="end" fontFamily="var(--font-mono)">PTT duty cycle</text>
+                <text x="140" y="310" fill="#64748b" fontSize="10" textAnchor="end" fontFamily="var(--font-mono)">tx / rx / idle</text>
 
-                <text x="24" y="122" fill="#6b7280" fontSize="12" fontWeight="500">Temperature</text>
-                <text x="24" y="142" fill="#111827" fontSize="15" fontWeight="700">39.1 °C</text>
+                {/* Paths: Memory */}
+                <path d="M 160 65 L 210 63 L 260 61 L 310 59 L 360 56 L 375 55" fill="none" stroke="#3b82f6" strokeWidth="2.5" />
+                <path d="M 160 67 L 210 65 L 260 64 L 310 63 L 360 61 L 840 45" fill="none" stroke="#64748b" strokeWidth="1.5" strokeDasharray="4 4" />
 
-                <text x="24" y="200" fill="#6b7280" fontSize="12" fontWeight="500">Memory (system PSS)</text>
-                <text x="24" y="220" fill="#111827" fontSize="15" fontWeight="700">822 MB</text>
+                {/* Paths: Thermal */}
+                <line x1="160" y1="125" x2="840" y2="125" stroke="#ef4444" strokeWidth="1" strokeDasharray="3 3" />
+                <path d="M 160 148 L 195 146 L 220 140 L 250 142 L 285 136 L 305 138 L 318 122 L 335 144 L 375 141" fill="none" stroke="#3b82f6" strokeWidth="2" />
 
-                <text x="24" y="278" fill="#6b7280" fontSize="12" fontWeight="500">CPU</text>
-                <text x="24" y="298" fill="#111827" fontSize="15" fontWeight="700">31%</text>
+                {/* Paths: Battery */}
+                <path d="M 160 225 L 208 221 L 210 223 L 265 217 L 268 220 L 318 214 L 322 216 L 375 210" fill="none" stroke="#3b82f6" strokeWidth="2" />
 
-                <text x="24" y="356" fill="#6b7280" fontSize="12" fontWeight="500">Events</text>
-
-                <text x="24" y="386" fill="#6b7280" fontSize="12" fontWeight="500">Test activity</text>
-
-                <rect x="375" y="20" width="465" height="375" fill="url(#futureGradient)" opacity="0.8" />
-                <text x="590" y="235" fill="#64748b" fontSize="12" fontWeight="500" textAnchor="middle">
-                  4 d 1.8 h remaining
-                </text>
-
-                <line x1="160" y1="118" x2="840" y2="118" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 3" />
-                <text x="815" y="112" fill="#ef4444" fontSize="11" fontWeight="600" textAnchor="end">45 °C</text>
-
-                <line x1="320" y1="114" x2="320" y2="355" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3 3" />
-
-                <path
-                  d="M 160 25 L 210 75 L 215 30 L 265 72 L 270 28 L 320 74 L 325 32 L 375 75 L 380 30 L 430 74 L 435 28 L 485 76 L 490 30 L 540 75 L 545 32 L 595 73 L 600 28 L 650 75 L 655 30 L 705 74 L 710 32 L 760 76 L 765 30 L 815 74 L 840 55"
-                  fill="none"
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 3"
-                />
-
-                <path
-                  d="M 160 30 L 205 78 L 210 28 L 258 76 L 264 26 L 312 79 L 318 29 L 366 74 L 372 32 L 375 52"
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                <path
-                  d="M 160 148 Q 200 142, 230 152 T 300 144 T 375 140 T 450 145 T 520 142 T 600 146 T 680 143 T 760 145 T 840 144"
-                  fill="none"
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 3"
-                />
-
-                <path
-                  d="M 160 146 Q 190 144, 210 150 T 250 142 T 280 148 L 305 132 L 320 114 L 332 136 L 350 147 L 375 145"
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                <path
-                  d="M 160 226 L 210 223 L 212 225 L 270 220 L 272 222 L 330 218 L 375 215 T 450 212 T 530 208 T 610 205 T 690 202 T 770 198 T 840 195"
-                  fill="none"
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 3"
-                />
-
-                <path
-                  d="M 160 225 L 208 221 L 210 223 L 265 217 L 268 220 L 318 214 L 322 216 L 375 210"
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                <path
-                  d="M 160 308 L 175 308 L 180 292 L 195 292 L 200 308 L 220 308 L 225 285 L 235 285 L 240 308 L 260 308 L 265 282 L 280 282 L 285 308 L 305 308 L 310 274 L 325 274 L 330 308 L 345 308 L 350 288 L 365 288 L 370 308 L 375 306"
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
+                {/* Event Markers on Timeline */}
                 {timelineEvents.map((ev) => (
-                  <g 
-                    key={ev.id} 
-                    className="timeline-event-marker"
-                    onClick={() => openLogViewer(ev.logKey)}
-                    style={{ cursor: 'pointer' }}
-                  >
+                  <g key={ev.id} onClick={() => openLogViewer(ev.logKey)} className="cursor-pointer group">
                     <rect 
                       x={ev.x - 18} 
                       y="342" 
                       width="36" 
                       height="18" 
                       rx="4" 
-                      fill={ev.type === 'thermal' ? '#ef4444' : '#f59e0b'} 
+                      fill={ev.type === 'thermal' ? '#ef4444' : ev.type === 'reboot' ? '#dc2626' : '#f59e0b'} 
+                      className="transition-transform group-hover:scale-105"
                     />
-                    <text 
-                      x={ev.x} 
-                      y="355" 
-                      fill="#ffffff" 
-                      fontSize="10" 
-                      fontWeight="700" 
-                      textAnchor="middle"
-                    >
+                    <text x={ev.x} y="355" fill="#ffffff" fontSize="10" fontWeight="700" textAnchor="middle" fontFamily="var(--font-mono)">
                       {ev.label}
                     </text>
                   </g>
                 ))}
 
-                <g>
-                  <rect x="180" y="375" width="40" height="15" rx="3" fill="#dbeafe" />
-                  <text x="200" y="386" fill="#1d4ed8" fontSize="9" fontWeight="600" textAnchor="middle">PTT call</text>
+                {/* NOW Line */}
+                <line x1="375" y1="20" x2="375" y2="395" stroke="#ef4444" strokeWidth="2" strokeDasharray="3 2" />
+                <text x="375" y="16" fill="#ef4444" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="var(--font-mono)">● NOW</text>
 
-                  <rect x="224" y="375" width="42" height="15" rx="3" fill="#f1f5f9" />
-                  <text x="245" y="386" fill="#475569" fontSize="9" fontWeight="500" textAnchor="middle">Idle stan</text>
+                {/* Days axis labels */}
+                {['D1 - Sep 23', 'D2 - Sep 24', 'D3 - Sep 25', 'D4 - Sep 26', 'D5 - Sep 27', 'D6 - Sep 28', 'D7 - Sep 29'].map((day, idx) => (
+                  <text key={day} x={175 + idx * 105} y="416" fill="#64748b" fontSize="10" fontWeight="600" fontFamily="var(--font-mono)">
+                    {day}
+                  </text>
+                ))}
 
-                  <rect x="270" y="375" width="40" height="15" rx="3" fill="#dbeafe" />
-                  <text x="290" y="386" fill="#1d4ed8" fontSize="9" fontWeight="600" textAnchor="middle">PTT call</text>
-
-                  <rect x="314" y="375" width="42" height="15" rx="3" fill="#f1f5f9" />
-                  <text x="335" y="386" fill="#475569" fontSize="9" fontWeight="500" textAnchor="middle">Idle stan</text>
-                </g>
-
-                <line x1="375" y1="20" x2="375" y2="395" stroke="#1e293b" strokeWidth="2" />
-                <text x="375" y="16" fill="#1e293b" fontSize="11" fontWeight="700" textAnchor="middle">Now</text>
-
-                <text x="175" y="416" fill="#64748b" fontSize="11" fontWeight="500">D1 - Sep 23</text>
-                <text x="285" y="416" fill="#64748b" fontSize="11" fontWeight="500">D2 - Sep 24</text>
-                <text x="395" y="416" fill="#64748b" fontSize="11" fontWeight="500">D3 - Sep 25</text>
-                <text x="505" y="416" fill="#64748b" fontSize="11" fontWeight="500">D4 - Sep 26</text>
-                <text x="615" y="416" fill="#64748b" fontSize="11" fontWeight="500">D5 - Sep 27</text>
-                <text x="725" y="416" fill="#64748b" fontSize="11" fontWeight="500">D6 - Sep 28</text>
-                <text x="805" y="416" fill="#64748b" fontSize="11" fontWeight="500">D7 - Sep 29</text>
-
+                {/* Tooltip Cursor */}
                 {hoveredPoint && (
                   <g>
-                    <line 
-                      x1={hoveredPoint.x} 
-                      y1="20" 
-                      x2={hoveredPoint.x} 
-                      y2="395" 
-                      stroke="#3b82f6" 
-                      strokeWidth="1" 
-                      strokeDasharray="2 2" 
-                    />
-                    <circle cx={hoveredPoint.x} cy="52" r="3" fill="#2563eb" />
-                    <rect 
-                      x={Math.min(hoveredPoint.x + 8, 740)} 
-                      y="40" 
-                      width="100" 
-                      height="38" 
-                      rx="4" 
-                      fill="#0f172a" 
-                      opacity="0.9" 
-                    />
-                    <text 
-                      x={Math.min(hoveredPoint.x + 16, 748)} 
-                      y="54" 
-                      fill="#f8fafc" 
-                      fontSize="10" 
-                      fontWeight="600"
-                    >
+                    <line x1={hoveredPoint.x} y1="20" x2={hoveredPoint.x} y2="395" stroke="#3b82f6" strokeWidth="1" strokeDasharray="2 2" />
+                    <circle cx={hoveredPoint.x} cy="56" r="3" fill="#2563eb" />
+                    <rect x={Math.min(hoveredPoint.x + 8, 740)} y="40" width="105" height="36" rx="4" fill="#0f172a" stroke="#334155" />
+                    <text x={Math.min(hoveredPoint.x + 16, 748)} y="54" fill="#f8fafc" fontSize="10" fontWeight="600">
                       {hoveredPoint.label}
                     </text>
-                    <text 
-                      x={Math.min(hoveredPoint.x + 16, 748)} 
-                      y="68" 
-                      fill="#93c5fd" 
-                      fontSize="9"
-                    >
-                      {hoveredPoint.isPastNow ? 'Projected reference' : 'Live sensor data'}
+                    <text x={Math.min(hoveredPoint.x + 16, 748)} y="68" fill="#93c5fd" fontSize="9">
+                      {hoveredPoint.isPastNow ? 'Projected Reference' : 'Live Sensor Data'}
                     </text>
                   </g>
                 )}
               </svg>
             </div>
 
-            <div className="timeline-footer-hint">
-              Drag across the chart to zoom. Select any event to open the logs, bugreport and test step recorded at that moment.
+            <div className="text-[11px] text-slate-500 font-mono flex items-center justify-between">
+              <span>Hover across matrix to inspect time slices. Click markers to jump to relevant log artifacts.</span>
+              <button onClick={() => openLogViewer('logcat')} className="text-blue-400 hover:text-blue-300 font-medium">
+                Open raw logcat →
+              </button>
             </div>
           </div>
 
-          <div className="monitoring-card">
-            <div className="monitoring-card-header">
-              <div className="monitoring-card-title">Findings to review</div>
-              <div className="findings-header-desc">Detected automatically from the soak data</div>
+          {/* Automated Findings Cards */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-3.5">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-100">Automated Soak Findings</h3>
+                <p className="text-xs text-slate-500 font-mono">Proactively flagged by the hardware anomaly detection model</p>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono">
+                3 anomalies
+              </span>
             </div>
 
-            <div className="findings-grid">
-              <div className="finding-card">
-                <div>
-                  <span className="finding-badge badge-yellow">Memory</span>
-                  <div className="finding-title" style={{ marginTop: '8px' }}>
-                    System PSS grows about 16 MB/day, similar to build 0919
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Finding 1 */}
+              <div className="p-3.5 rounded-xl bg-slate-900/60 border border-amber-500/30 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold uppercase">
+                    Memory Leak
+                  </span>
+                  <div className="text-xs font-semibold text-slate-200 leading-snug">
+                    System PSS grows ~16 MB/day during PTT loop
                   </div>
-                  <div className="finding-desc">
-                    Largest growth: com.relay.ptt (+11 MB/day)
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    Highest contributor: com.relay.ptt (+11 MB/day)
                   </div>
                 </div>
-                <button 
-                  className="finding-btn"
+                <button
                   onClick={() => setActiveModal('createBug')}
+                  className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700"
                 >
-                  Create bug
+                  Create Jira Defect
                 </button>
               </div>
 
-              <div className="finding-card">
-                <div>
-                  <span className="finding-badge badge-red">Stability</span>
-                  <div className="finding-title" style={{ marginTop: '8px' }}>
-                    Reboot after kernel soft lockup, during PTT call loop
+              {/* Finding 2 */}
+              <div className="p-3.5 rounded-xl bg-slate-900/60 border border-rose-500/30 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] font-mono font-bold uppercase">
+                    Kernel Stability
+                  </span>
+                  <div className="text-xs font-semibold text-slate-200 leading-snug">
+                    Reboot after CPU3 soft lockup in audio router
                   </div>
-                  <div className="finding-desc">
-                    last_kmsg and bugreport attached
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    last_kmsg and watchdog dump captured
                   </div>
                 </div>
-                <button 
-                  className="finding-btn"
+                <button
                   onClick={() => openLogViewer('last_kmsg')}
+                  className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700"
                 >
-                  Open logs
+                  Inspect Panic Log
                 </button>
               </div>
 
-              <div className="finding-card">
-                <div>
-                  <span className="finding-badge badge-orange">Thermal</span>
-                  <div className="finding-title" style={{ marginTop: '8px' }}>
-                    46.2 °C while charging during a call
+              {/* Finding 3 */}
+              <div className="p-3.5 rounded-xl bg-slate-900/60 border border-amber-500/30 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold uppercase">
+                    Thermal Spike
+                  </span>
+                  <div className="text-xs font-semibold text-slate-200 leading-snug">
+                    Peak 46.2 °C during 18W QC fast charge
                   </div>
-                  <div className="finding-desc">
-                    No throttling recorded. Build 0919 peaked at 42 °C.
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    CPU throttled to 1.6 GHz to clear threshold
                   </div>
                 </div>
-                <button 
-                  className="finding-btn"
+                <button
                   onClick={() => setActiveModal('compareThermal')}
+                  className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700"
                 >
-                  Compare
+                  Compare Thermal Baseline
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="monitoring-right-col">
-          <div className="monitoring-card">
-            <div className="monitoring-card-header">
-              <div className="monitoring-card-title">Event log</div>
-              <button 
-                onClick={() => setActiveModal('eventDrawer')} 
-                style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: '500', cursor: 'pointer', padding: 0 }}
+        {/* Right Column: Events, Alerts, Retention (4 cols) */}
+        <div className="lg:col-span-4 space-y-4">
+          
+          {/* Recent Event Log */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Hardware Event Stream</h3>
+              <button
+                onClick={() => setActiveModal('eventDrawer')}
+                className="text-xs text-blue-400 hover:text-blue-300 font-mono"
               >
-                All 23
+                All 23 events →
               </button>
             </div>
 
-            <div className="event-log-list">
-              <div className="event-log-item">
-                <span className="event-dot blue"></span>
-                <div className="event-content">
-                  <div className="event-title">Wi-Fi disconnect, reconnected in 4 s</div>
-                  <div className="event-meta">
-                    Sep 26 01:34 · <span className="event-link" onClick={() => openLogViewer('logcat')}>logcat</span>
+            <div className="space-y-2 text-xs">
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-blue-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">Wi-Fi disconnect, reconnected in 4.2 s</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">
+                    Sep 26 01:34 · <span className="text-blue-400 hover:underline cursor-pointer" onClick={() => openLogViewer('logcat')}>logcat</span>
                   </div>
                 </div>
               </div>
 
-              <div className="event-log-item">
-                <span className="event-dot amber"></span>
-                <div className="event-content">
-                  <div className="event-title">ANR in com.relay.ptt (input dispatch)</div>
-                  <div className="event-meta">
-                    Sep 25 19:36 · <span className="event-link" onClick={() => openLogViewer('traces_input')}>traces</span>
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-amber-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">ANR in com.relay.ptt (input dispatch)</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">
+                    Sep 25 19:36 · <span className="text-blue-400 hover:underline cursor-pointer" onClick={() => openLogViewer('traces_input')}>traces.txt</span>
                   </div>
                 </div>
               </div>
 
-              <div className="event-log-item">
-                <span className="event-dot amber"></span>
-                <div className="event-content">
-                  <div className="event-title">Temperature 46.2 °C, above 45 °C for 6 min</div>
-                  <div className="event-meta">
-                    Sep 25 05:17 · <span className="event-link" onClick={() => openLogViewer('thermal')}>thermal log</span>
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-rose-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">Unexpected reboot: watchdog timeout</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">
+                    Sep 25 02:52 · <span className="text-blue-400 hover:underline cursor-pointer" onClick={() => openLogViewer('bugreport')}>bugreport</span>
                   </div>
                 </div>
               </div>
 
-              <div className="event-log-item">
-                <span className="event-dot red"></span>
-                <div className="event-content">
-                  <div className="event-title">Unexpected reboot, reason: watchdog</div>
-                  <div className="event-meta">
-                    Sep 25 02:52 · <span className="event-link" onClick={() => openLogViewer('bugreport')}>bugreport</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="event-log-item">
-                <span className="event-dot red"></span>
-                <div className="event-content">
-                  <div className="event-title">Kernel: soft lockup on CPU3</div>
-                  <div className="event-meta">
-                    Sep 25 02:34 · <span className="event-link" onClick={() => openLogViewer('last_kmsg')}>last_kmsg</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="event-log-item">
-                <span className="event-dot amber"></span>
-                <div className="event-content">
-                  <div className="event-title">ANR in com.relay.ptt (service timeout)</div>
-                  <div className="event-meta">
-                    Sep 24 06:24 · <span className="event-link" onClick={() => openLogViewer('traces_service')}>traces</span>
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-rose-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">Kernel soft lockup on CPU#3</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">
+                    Sep 25 02:34 · <span className="text-blue-400 hover:underline cursor-pointer" onClick={() => openLogViewer('last_kmsg')}>last_kmsg</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="monitoring-card">
-            <div className="monitoring-card-header">
-              <div className="monitoring-card-title">Alert rules</div>
-              <button 
-                className="finding-btn"
+          {/* Active Alert Rules */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Alert Triggers</h3>
+              <button
                 onClick={() => setActiveModal('addRule')}
-                style={{ padding: '4px 10px', fontSize: '12px' }}
+                className="px-2 py-0.5 rounded bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-xs font-mono border border-blue-500/30"
               >
-                + Rule
+                + Add Rule
               </button>
             </div>
 
-            <div className="alert-rules-list">
+            <div className="space-y-2">
               {alertRules.map((rule) => (
-                <div className="alert-rule-item" key={rule.id}>
-                  <div className="alert-rule-info">
-                    <div className="alert-rule-name">{rule.name}</div>
-                    <div className="alert-rule-desc">{rule.desc}</div>
+                <div key={rule.id} className="p-2 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-slate-200 truncate">{rule.name}</div>
+                    <div className="text-[10px] text-slate-500 font-mono truncate">{rule.desc}</div>
                   </div>
-                  <label className="toggle-switch">
-                    <input 
-                      type="checkbox" 
-                      checked={rule.enabled} 
-                      onChange={() => toggleRule(rule.id)} 
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => toggleRule(rule.id)}
+                    className={`w-8 h-4.5 flex items-center rounded-full p-0.5 transition-colors shrink-0 ${
+                      rule.enabled ? 'bg-blue-600' : 'bg-slate-800 border border-slate-700'
+                    }`}
+                  >
+                    <div className={`bg-white size-3.5 rounded-full shadow-md transform transition-transform ${
+                      rule.enabled ? 'translate-x-3.5' : 'translate-x-0'
+                    }`} />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="monitoring-card">
-            <div className="monitoring-card-header">
-              <div className="monitoring-card-title">Capture and retention</div>
-            </div>
-
-            <div className="retention-table">
-              <div className="retention-row">
-                <span className="retention-key">Metrics sampling</span>
-                <span className="retention-value">every 30 s</span>
+          {/* Telemetry Storage & Retention */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Telemetry Storage & Retention</h3>
+            <div className="divide-y divide-slate-800/60 text-xs font-mono">
+              <div className="py-1.5 flex justify-between text-slate-400">
+                <span>Metrics Sampling</span>
+                <span className="text-slate-200 font-bold">every 30 s</span>
               </div>
-              <div className="retention-row">
-                <span className="retention-key">logcat, dmesg</span>
-                <span className="retention-value">continuous, 2 GB ring</span>
+              <div className="py-1.5 flex justify-between text-slate-400">
+                <span>Ring Buffer (logcat)</span>
+                <span className="text-slate-200">2 GB ring / device</span>
               </div>
-              <div className="retention-row">
-                <span className="retention-key">Bugreport</span>
-                <span className="retention-value">on reboot, ANR, crash</span>
+              <div className="py-1.5 flex justify-between text-slate-400">
+                <span>Bugreport Dump</span>
+                <span className="text-slate-200">On crash / ANR</span>
               </div>
-              <div className="retention-row">
-                <span className="retention-key">Perfetto trace</span>
-                <span className="retention-value">on ANR</span>
-              </div>
-              <div className="retention-row">
-                <span className="retention-key">Retention</span>
-                <span className="retention-value">90 days</span>
+              <div className="py-1.5 flex justify-between text-slate-400">
+                <span>TTL Retention</span>
+                <span className="text-slate-200">90 days</span>
               </div>
             </div>
 
-            <button 
-              className="btn-download-logs" 
+            <button
               onClick={handleDownloadAllLogs}
+              className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors flex items-center justify-center gap-2 shadow-md shadow-blue-900/30"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              Download all logs (4.1 GB)
+              <Download className="size-3.5" /> Download Full Archive (4.1 GB)
             </button>
           </div>
+
         </div>
+
       </div>
 
-      {toastMessage && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: '#111827',
-          color: '#ffffff',
-          padding: '12px 18px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: '500',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
-          zIndex: 2000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <span style={{ color: '#10b981' }}>✓</span>
-          {toastMessage}
-        </div>
-      )}
-
+      {/* Log Viewer Modal */}
       {activeModal === 'logs' && SAMPLE_LOGS[modalLogKey] && (
-        <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
-          <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="monitoring-modal-header">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+          <div className="w-full max-w-2xl bg-[#0a0f1b] border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div>
-                <h3>{SAMPLE_LOGS[modalLogKey].title}</h3>
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                  <Terminal className="size-4 text-blue-400" />
+                  {SAMPLE_LOGS[modalLogKey].title}
+                </h3>
+                <p className="text-[11px] text-slate-400 font-mono mt-0.5">
                   Captured at: {SAMPLE_LOGS[modalLogKey].timestamp}
-                </span>
+                </p>
               </div>
-              <button 
-                onClick={() => setActiveModal(null)} 
-                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280' }}
-              >
-                ✕
+              <button onClick={() => setActiveModal(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="size-4" />
               </button>
             </div>
-            <div className="monitoring-modal-body">
-              <div className="log-terminal">
-                {SAMPLE_LOGS[modalLogKey].lines.map((ln, i) => (
-                  <div key={i} className={
-                    ln.type === 'err' ? 'log-err' : 
-                    ln.type === 'warn' ? 'log-warn' : 
-                    ln.type === 'info' ? 'log-info' : ''
-                  }>
-                    {ln.text}
-                  </div>
-                ))}
-              </div>
+
+            <div className="p-3 bg-black/80 border border-slate-900 rounded-xl max-h-72 overflow-y-auto font-mono text-[11px] space-y-1">
+              {SAMPLE_LOGS[modalLogKey].lines.map((ln, idx) => (
+                <div key={idx} className={
+                  ln.type === 'err' ? 'text-rose-400 font-semibold' :
+                  ln.type === 'warn' ? 'text-amber-300' :
+                  ln.type === 'info' ? 'text-sky-300' : 'text-slate-400'
+                }>
+                  {ln.text}
+                </div>
+              ))}
             </div>
-            <div className="monitoring-modal-footer">
-              <button 
-                className="finding-btn"
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <button
                 onClick={() => {
                   navigator.clipboard?.writeText(SAMPLE_LOGS[modalLogKey].lines.map(l => l.text).join('\n'));
-                  showToast('Log contents copied to clipboard');
+                  showToast('Log copied to clipboard');
                 }}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium"
               >
-                Copy to clipboard
+                Copy to Clipboard
               </button>
-              <button 
-                className="btn btn-primary" 
-                style={{ padding: '6px 16px', fontSize: '13px', borderRadius: '6px' }}
+              <button
                 onClick={() => setActiveModal(null)}
+                className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
               >
                 Done
               </button>
@@ -753,216 +621,251 @@ const Monitoring = () => {
         </div>
       )}
 
+      {/* Create Jira Bug Modal */}
       {activeModal === 'createBug' && (
-        <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
-          <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="monitoring-modal-header">
-              <h3>Create Defect Ticket</h3>
-              <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+          <div className="w-full max-w-lg bg-[#0a0f1b] border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <ShieldAlert className="size-4 text-amber-400" /> Create Defect Ticket
+              </h3>
+              <button onClick={() => setActiveModal(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="size-4" />
+              </button>
             </div>
-            <form onSubmit={handleCreateBugSubmit}>
-              <div className="monitoring-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+            <form onSubmit={handleCreateBugSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-300 font-medium">Issue Summary</label>
+                <input
+                  type="text"
+                  value={bugForm.title}
+                  onChange={e => setBugForm({ ...bugForm, title: e.target.value })}
+                  className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Issue Summary</label>
-                  <input 
-                    type="text" 
-                    value={bugForm.title} 
-                    onChange={(e) => setBugForm({ ...bugForm, title: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }} 
+                  <label className="text-slate-300 font-medium">Subsystem Component</label>
+                  <input
+                    type="text"
+                    value={bugForm.component}
+                    onChange={e => setBugForm({ ...bugForm, component: e.target.value })}
+                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
                   />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Component</label>
-                    <input 
-                      type="text" 
-                      value={bugForm.component} 
-                      onChange={(e) => setBugForm({ ...bugForm, component: e.target.value })}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }} 
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Severity</label>
-                    <select 
-                      value={bugForm.severity}
-                      onChange={(e) => setBugForm({ ...bugForm, severity: e.target.value })}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-                    >
-                      <option>Critical - P0</option>
-                      <option>High - P1</option>
-                      <option>High - P2</option>
-                      <option>Medium - P3</option>
-                    </select>
-                  </div>
-                </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Investigation Context</label>
-                  <textarea 
-                    rows={4}
-                    value={bugForm.notes} 
-                    onChange={(e) => setBugForm({ ...bugForm, notes: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'inherit' }} 
-                  />
-                </div>
-                <div style={{ fontSize: '12px', color: '#6b7280', background: '#f8fafc', padding: '10px', borderRadius: '6px' }}>
-                  📎 <strong>Attached:</strong> soak-1045-meminfo.dump, bugreport.zip (822 MB system PSS trace)
+                  <label className="text-slate-300 font-medium">Severity</label>
+                  <select
+                    value={bugForm.severity}
+                    onChange={e => setBugForm({ ...bugForm, severity: e.target.value })}
+                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
+                  >
+                    <option>Critical - P0</option>
+                    <option>High - P1</option>
+                    <option>High - P2</option>
+                    <option>Medium - P3</option>
+                  </select>
                 </div>
               </div>
-              <div className="monitoring-modal-footer">
-                <button type="button" className="finding-btn" onClick={() => setActiveModal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px', borderRadius: '6px' }}>Create Jira Bug</button>
+
+              <div>
+                <label className="text-slate-300 font-medium">Reproduction Notes</label>
+                <textarea
+                  rows={3}
+                  value={bugForm.notes}
+                  onChange={e => setBugForm({ ...bugForm, notes: e.target.value })}
+                  className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
+                />
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] font-mono text-slate-400">
+                📎 Attached: soak-1045-meminfo.dump, bugreport.zip (822 MB trace)
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+                >
+                  Create Jira Defect
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* Compare Thermal Baseline Modal */}
       {activeModal === 'compareThermal' && (
-        <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
-          <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="monitoring-modal-header">
-              <h3>Thermal Profile Comparison</h3>
-              <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+          <div className="w-full max-w-lg bg-[#0a0f1b] border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <Flame className="size-4 text-amber-400" /> Thermal Profile Comparison
+              </h3>
+              <button onClick={() => setActiveModal(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="size-4" />
+              </button>
             </div>
-            <div className="monitoring-modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ padding: '14px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Current Soak (Build 0923)</div>
-                  <div style={{ fontSize: '22px', fontWeight: '700', color: '#dc2626', marginTop: '4px' }}>46.2 °C</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                    Triggered during PTT call while on 18W QC fast charge.
-                  </div>
-                </div>
-                <div style={{ padding: '14px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Prior Soak (Build 0919)</div>
-                  <div style={{ fontSize: '22px', fontWeight: '700', color: '#2563eb', marginTop: '4px' }}>42.0 °C</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                    Peak recorded during Day 4 audio streaming.
-                  </div>
-                </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-rose-500/30 space-y-1">
+                <div className="text-slate-400 font-mono text-[11px]">Current Soak (Build 0923)</div>
+                <div className="text-2xl font-bold font-mono text-rose-400">46.2 °C</div>
+                <div className="text-slate-500 text-[11px]">Triggered during PTT call while on 18W QC fast charge.</div>
               </div>
 
-              <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
-                <p><strong>Analysis:</strong> Build 0923 introduces a <strong>+4.2 °C delta</strong> under identical charging current and network conditions. Kernel thermal governor did not throttle core frequencies until sensor reached 46.0 °C.</p>
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-blue-500/30 space-y-1">
+                <div className="text-slate-400 font-mono text-[11px]">Prior Soak (Build 0919)</div>
+                <div className="text-2xl font-bold font-mono text-blue-400">42.0 °C</div>
+                <div className="text-slate-500 text-[11px]">Peak recorded during Day 4 continuous audio streaming.</div>
               </div>
             </div>
-            <div className="monitoring-modal-footer">
-              <button className="finding-btn" onClick={() => openLogViewer('thermal')}>View Thermal Log</button>
-              <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px', borderRadius: '6px' }} onClick={() => setActiveModal(null)}>Close</button>
+
+            <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+              <strong>Root cause delta:</strong> Build 0923 introduces a <strong>+4.2 °C delta</strong> under identical charging current. Governor did not step down clock frequency until threshold breached.
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => openLogViewer('thermal')}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium"
+              >
+                Inspect Thermal Log
+              </button>
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Add Alert Rule Modal */}
       {activeModal === 'addRule' && (
-        <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
-          <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="monitoring-modal-header">
-              <h3>Add Alert Rule</h3>
-              <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+          <div className="w-full max-w-md bg-[#0a0f1b] border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <Plus className="size-4 text-blue-400" /> Add Alert Rule
+              </h3>
+              <button onClick={() => setActiveModal(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="size-4" />
+              </button>
             </div>
-            <form onSubmit={handleAddRuleSubmit}>
-              <div className="monitoring-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Rule Condition / Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. CPU > 90% for 3 min" 
-                    value={newRuleName} 
-                    onChange={(e) => setNewRuleName(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }} 
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Action & Destination</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Slack #relay-qa & email test-leads@relay.go" 
-                    value={newRuleDesc} 
-                    onChange={(e) => setNewRuleDesc(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }} 
-                  />
-                </div>
+
+            <form onSubmit={handleAddRuleSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-300 font-medium">Rule Condition / Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CPU > 90% for 3 min"
+                  value={newRuleName}
+                  onChange={e => setNewRuleName(e.target.value)}
+                  required
+                  className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
+                />
               </div>
-              <div className="monitoring-modal-footer">
-                <button type="button" className="finding-btn" onClick={() => setActiveModal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px', borderRadius: '6px' }}>Save Rule</button>
+
+              <div>
+                <label className="text-slate-300 font-medium">Notification Destination</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Slack #relay-qa & email test-leads@relay.go"
+                  value={newRuleDesc}
+                  onChange={e => setNewRuleDesc(e.target.value)}
+                  className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+                >
+                  Save Rule
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* All Events Drawer Modal */}
       {activeModal === 'eventDrawer' && (
-        <div className="monitoring-modal-backdrop" onClick={() => setActiveModal(null)}>
-          <div className="monitoring-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="monitoring-modal-header">
-              <h3>All Soak Events (23)</h3>
-              <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+          <div className="w-full max-w-lg bg-[#0a0f1b] border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-semibold text-slate-100">All Soak Events (23)</h3>
+              <button onClick={() => setActiveModal(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="size-4" />
+              </button>
             </div>
-            <div className="monitoring-modal-body" style={{ maxHeight: '420px' }}>
-              <div className="event-log-list">
-                <div className="event-log-item">
-                  <span className="event-dot blue"></span>
-                  <div className="event-content">
-                    <div className="event-title">Wi-Fi disconnect, reconnected in 4 s</div>
-                    <div className="event-meta">Sep 26 01:34 · <span className="event-link" onClick={() => openLogViewer('logcat')}>logcat</span></div>
-                  </div>
+
+            <div className="max-h-80 overflow-y-auto space-y-2 text-xs">
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-blue-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">Wi-Fi disconnect, reconnected in 4.2 s</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">Sep 26 01:34 · logcat</div>
                 </div>
-                <div className="event-log-item">
-                  <span className="event-dot amber"></span>
-                  <div className="event-content">
-                    <div className="event-title">ANR in com.relay.ptt (input dispatch)</div>
-                    <div className="event-meta">Sep 25 19:36 · <span className="event-link" onClick={() => openLogViewer('traces_input')}>traces</span></div>
-                  </div>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-amber-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">ANR in com.relay.ptt (input dispatch)</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">Sep 25 19:36 · traces.txt</div>
                 </div>
-                <div className="event-log-item">
-                  <span className="event-dot amber"></span>
-                  <div className="event-content">
-                    <div className="event-title">Temperature 46.2 °C, above 45 °C for 6 min</div>
-                    <div className="event-meta">Sep 25 05:17 · <span className="event-link" onClick={() => openLogViewer('thermal')}>thermal log</span></div>
-                  </div>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-amber-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">Temperature 46.2 °C, above 45 °C for 6 min</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">Sep 25 05:17 · thermal log</div>
                 </div>
-                <div className="event-log-item">
-                  <span className="event-dot red"></span>
-                  <div className="event-content">
-                    <div className="event-title">Unexpected reboot, reason: watchdog</div>
-                    <div className="event-meta">Sep 25 02:52 · <span className="event-link" onClick={() => openLogViewer('bugreport')}>bugreport</span></div>
-                  </div>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-rose-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">Unexpected reboot, reason: watchdog</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">Sep 25 02:52 · bugreport</div>
                 </div>
-                <div className="event-log-item">
-                  <span className="event-dot red"></span>
-                  <div className="event-content">
-                    <div className="event-title">Kernel: soft lockup on CPU3</div>
-                    <div className="event-meta">Sep 25 02:34 · <span className="event-link" onClick={() => openLogViewer('last_kmsg')}>last_kmsg</span></div>
-                  </div>
-                </div>
-                <div className="event-log-item">
-                  <span className="event-dot amber"></span>
-                  <div className="event-content">
-                    <div className="event-title">ANR in com.relay.ptt (service timeout)</div>
-                    <div className="event-meta">Sep 24 06:24 · <span className="event-link" onClick={() => openLogViewer('traces_service')}>traces</span></div>
-                  </div>
-                </div>
-                <div className="event-log-item">
-                  <span className="event-dot blue"></span>
-                  <div className="event-content">
-                    <div className="event-title">Wi-Fi roaming handoff to AP-02 (-68 dBm)</div>
-                    <div className="event-meta">Sep 24 01:12 · <span className="event-link" onClick={() => openLogViewer('logcat')}>logcat</span></div>
-                  </div>
-                </div>
-                <div className="event-log-item">
-                  <span className="event-dot blue"></span>
-                  <div className="event-content">
-                    <div className="event-title">Full battery charge cycle completed (100%)</div>
-                    <div className="event-meta">Sep 23 23:40 · <span className="event-link" onClick={() => openLogViewer('logcat')}>logcat</span></div>
-                  </div>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                <span className="size-2 rounded-full bg-rose-500 shrink-0 mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-slate-200 font-medium">Kernel: soft lockup on CPU3</div>
+                  <div className="text-[10.5px] text-slate-500 font-mono mt-0.5">Sep 25 02:34 · last_kmsg</div>
                 </div>
               </div>
             </div>
-            <div className="monitoring-modal-footer">
-              <button className="btn btn-primary" style={{ padding: '6px 16px', fontSize: '13px', borderRadius: '6px' }} onClick={() => setActiveModal(null)}>Close</button>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

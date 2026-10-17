@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  Grid, 
+  Layers, 
+  CheckSquare, 
+  Plus, 
+  RefreshCw, 
+  SlidersHorizontal, 
+  Clock, 
+  Cpu, 
+  ShieldCheck, 
+  ExternalLink,
+  Search,
+  Filter
+} from 'lucide-react';
+import { Badge, Button, Modal, SearchInput } from '../components/ui';
 
 const QUICK_GROUPS = [
   'Device driver', 'Bootloader', 'HAL', 'Framework', 'Connectivity',
   'Stress', 'Soak', 'Power', 'Performance', 'System E2E',
-  'Functional · PTT, System UI', 'OTA', 'Security', 'Accessory',
-  'Audio', 'Compliance', 'Telephony'
+  'Functional · PTT', 'OTA', 'Security', 'Audio'
 ];
 
 const TAG_FILTERS = [
-  'Model: all', 'Android: 13, 16', 'Priority: any', 'Needs: BT headset',
-  'Needs: SIM', 'Needs: charging dock', 'Needs: network emulator', 'Duration: < 5 min'
+  'Model: all', 'Android: 13, 16', 'Priority: P1', 'Needs: BT',
+  'Needs: SIM', 'Needs: Dock', 'Duration: < 5m'
 ];
 
 const MATRIX_COLUMNS = [
@@ -17,31 +31,28 @@ const MATRIX_COLUMNS = [
   { key: 'functional', label: 'Functional' },
   { key: 'stress', label: 'Stress' },
   { key: 'soak', label: 'Soak' },
-  { key: 'perf', label: 'Perf /\nstability' },
+  { key: 'perf', label: 'Perf' },
   { key: 'power', label: 'Power' },
-  { key: 'e2e', label: 'System\nE2E' },
+  { key: 'e2e', label: 'E2E' },
   { key: 'compliance', label: 'Compliance' }
 ];
 
 const MATRIX_ROWS = [
   { id: 'bootloader', name: 'Bootloader', values: { sanity: 4, functional: 10, stress: 2, soak: null, perf: 2, power: null, e2e: null, compliance: null }, total: 18 },
-  { id: 'kernel', name: 'Kernel & drivers', values: { sanity: 12, functional: 88, stress: 18, soak: 4, perf: 10, power: 6, e2e: null, compliance: 4 }, total: 142 },
-  { id: 'hal', name: 'HAL', values: { sanity: 4, functional: 26, stress: 4, soak: null, perf: 2, power: 2, e2e: null, compliance: 2 }, total: 40 },
-  { id: 'framework', name: 'Android framework', values: { sanity: 3, functional: 19, stress: 2, soak: null, perf: 2, power: null, e2e: 2, compliance: null }, total: 28 },
-  { id: 'system_ui', name: 'System UI', values: { sanity: 2, functional: 12, stress: null, soak: null, perf: 2, power: null, e2e: null, compliance: null }, total: 16 },
-  { id: 'connectivity', name: 'Connectivity', values: { sanity: 4, functional: 28, stress: 6, soak: 2, perf: 4, power: 2, e2e: 2, compliance: null }, total: 48 },
-  { id: 'audio', name: 'Audio', values: { sanity: 1, functional: 7, stress: null, soak: null, perf: 2, power: null, e2e: null, compliance: null }, total: 10 },
-  { id: 'ptt', name: 'PTT service', values: { sanity: 1, functional: 3, stress: null, soak: null, perf: null, power: null, e2e: 1, compliance: null }, total: 5 },
-  { id: 'location', name: 'Location / GNSS', values: { sanity: 1, functional: 4, stress: null, soak: null, perf: 1, power: null, e2e: null, compliance: null }, total: 6 },
-  { id: 'accessories', name: 'Accessories', values: { sanity: 1, functional: 6, stress: null, soak: null, perf: null, power: 1, e2e: null, compliance: null }, total: 8 },
-  { id: 'ota', name: 'OTA / update', values: { sanity: 1, functional: 8, stress: 1, soak: null, perf: null, power: null, e2e: 2, compliance: null }, total: 12 },
-  { id: 'security', name: 'Security', values: { sanity: 1, functional: 6, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: 5 }, total: 12 },
-  { id: 'telephony', name: 'Telephony & carrier', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
-  { id: 'sos', name: 'Emergency / SOS', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
-  { id: 'mdm', name: 'Provisioning & MDM', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
-  { id: 'buttons', name: 'Buttons, LED, haptics', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
-  { id: 'fault', name: 'Fault injection', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
-  { id: 'dispatch', name: 'Dispatch / backend', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 }
+  { id: 'kernel', name: 'Kernel & Drivers', values: { sanity: 12, functional: 88, stress: 18, soak: 4, perf: 10, power: 6, e2e: null, compliance: 4 }, total: 142 },
+  { id: 'hal', name: 'Hardware Abstraction (HAL)', values: { sanity: 4, functional: 26, stress: 4, soak: null, perf: 2, power: 2, e2e: null, compliance: 2 }, total: 40 },
+  { id: 'framework', name: 'Android Framework', values: { sanity: 3, functional: 19, stress: 2, soak: null, perf: 2, power: null, e2e: 2, compliance: null }, total: 28 },
+  { id: 'system_ui', name: 'System UI / UX', values: { sanity: 2, functional: 12, stress: null, soak: null, perf: 2, power: null, e2e: null, compliance: null }, total: 16 },
+  { id: 'connectivity', name: 'RF & Connectivity (5G/Wi-Fi)', values: { sanity: 4, functional: 28, stress: 6, soak: 2, perf: 4, power: 2, e2e: 2, compliance: null }, total: 48 },
+  { id: 'audio', name: 'Audio DSP & Codecs', values: { sanity: 1, functional: 7, stress: null, soak: null, perf: 2, power: null, e2e: null, compliance: null }, total: 10 },
+  { id: 'ptt', name: 'PTT Fast-Dispatch Service', values: { sanity: 1, functional: 3, stress: null, soak: null, perf: null, power: null, e2e: 1, compliance: null }, total: 5 },
+  { id: 'location', name: 'Location & GNSS Tracking', values: { sanity: 1, functional: 4, stress: null, soak: null, perf: 1, power: null, e2e: null, compliance: null }, total: 6 },
+  { id: 'accessories', name: 'Accessories (BT/Cradle)', values: { sanity: 1, functional: 6, stress: null, soak: null, perf: null, power: 1, e2e: null, compliance: null }, total: 8 },
+  { id: 'ota', name: 'OTA Dual-Slot A/B Update', values: { sanity: 1, functional: 8, stress: 1, soak: null, perf: null, power: null, e2e: 2, compliance: null }, total: 12 },
+  { id: 'security', name: 'Security & Keystore (STS)', values: { sanity: 1, functional: 6, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: 5 }, total: 12 },
+  { id: 'telephony', name: 'Carrier & VoLTE IMS', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
+  { id: 'sos', name: 'Emergency SOS & Man-Down', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
+  { id: 'mdm', name: 'Zero-Touch MDM Enroll', isPlanned: true, values: { sanity: null, functional: null, stress: null, soak: null, perf: null, power: null, e2e: null, compliance: null }, total: 0 },
 ];
 
 const COLUMN_TOTALS = {
@@ -57,75 +68,21 @@ const COLUMN_TOTALS = {
 };
 
 const SAMPLE_KERNEL_STRESS_CASES = [
-  {
-    id: 'DRV_I2C_STRESS_022',
-    name: 'DRV_I2C_STRESS_022',
-    desc: 'I2C bus: 10k back-to-back transfers',
-    priority: 'P1',
-    duration: '8 min',
-    models: 'X, M',
-    android: 'A13, A16',
-    checked: true
-  },
-  {
-    id: 'DRV_SPI_STRESS_004',
-    name: 'DRV_SPI_STRESS_004',
-    desc: 'SPI flash read/write loop',
-    priority: 'P1',
-    duration: '6 min',
-    models: 'X, M',
-    android: 'A13, A16',
-    checked: true
-  },
-  {
-    id: 'DRV_USB_STRESS_010',
-    name: 'DRV_USB_STRESS_010',
-    desc: 'USB attach/detach ×500 (relay-controlled)',
-    priority: 'P2',
-    duration: '12 min',
-    models: 'X',
-    android: 'A16',
-    checked: true
-  },
-  {
-    id: 'DRV_GPIO_PTTKEY_003',
-    name: 'DRV_GPIO_PTTKEY_003',
-    desc: 'PTT key press/release ×5,000',
-    priority: 'P1',
-    duration: '5 min',
-    models: 'X, M',
-    android: 'A13, A16',
-    checked: true
-  },
-  {
-    id: 'DRV_CAM_STRESS_007',
-    name: 'DRV_CAM_STRESS_007',
-    desc: 'Camera open/close ×1,000',
-    priority: 'P3',
-    duration: '9 min',
-    models: 'X',
-    android: 'A16',
-    checked: false
-  },
-  {
-    id: 'DRV_SUSPEND_RESUME_015',
-    name: 'DRV_SUSPEND_RESUME_015',
-    desc: 'Suspend/resume cycle ×300',
-    priority: 'P1',
-    duration: '15 min',
-    models: 'X, M',
-    android: 'A13, A16',
-    checked: true
-  }
+  { id: 'DRV_I2C_STRESS_022', name: 'DRV_I2C_STRESS_022', desc: 'I2C bus: 10k back-to-back burst transfers without NACK', priority: 'P1', duration: '8 min', models: 'X, M', android: 'A13, A16', checked: true },
+  { id: 'DRV_SPI_STRESS_004', name: 'DRV_SPI_STRESS_004', desc: 'SPI flash circular read/write block integrity check', priority: 'P1', duration: '6 min', models: 'X, M', android: 'A13, A16', checked: true },
+  { id: 'DRV_USB_STRESS_010', name: 'DRV_USB_STRESS_010', desc: 'USB attach/detach ×500 cycle via hardware relay matrix', priority: 'P2', duration: '12 min', models: 'X', android: 'A16', checked: true },
+  { id: 'DRV_GPIO_PTTKEY_003', name: 'DRV_GPIO_PTTKEY_003', desc: 'PTT key interrupt debounce & press/release ×5,000', priority: 'P1', duration: '5 min', models: 'X, M', android: 'A13, A16', checked: true },
+  { id: 'DRV_CAM_STRESS_007', name: 'DRV_CAM_STRESS_007', desc: 'Camera HAL stream open/close ×1,000 without memory leak', priority: 'P3', duration: '9 min', models: 'X', android: 'A16', checked: false },
+  { id: 'DRV_SUSPEND_RESUME_015', name: 'DRV_SUSPEND_RESUME_015', desc: 'Deep sleep suspend/resume RTC alarm wake cycle ×300', priority: 'P1', duration: '15 min', models: 'X, M', android: 'A13, A16', checked: true }
 ];
 
 const COVERAGE_GAPS = [
-  { name: 'Telephony & carrier (VoLTE, APN, SIM)', count: '28 planned' },
-  { name: 'Compliance: CTS / VTS / STS runs', count: '4 planned' },
-  { name: 'PTT performance and audio quality', count: '22 planned' },
-  { name: 'Network impairment and roaming', count: '18 planned' },
-  { name: 'Emergency / SOS and man-down', count: '12 planned' },
-  { name: 'Provisioning, MDM and fault injection', count: '51 planned' }
+  { name: 'Carrier & VoLTE IMS (APN, eSIM, Emergency)', count: '28 planned', severity: 'warning' },
+  { name: 'Compliance: CTS / VTS / STS Google suites', count: '4 planned', severity: 'neutral' },
+  { name: 'PTT MOS audio latency & PESQ quality score', count: '22 planned', severity: 'warning' },
+  { name: 'RF attenuation & handover roaming stress', count: '18 planned', severity: 'neutral' },
+  { name: 'Man-down accelerometer interrupt calibration', count: '12 planned', severity: 'neutral' },
+  { name: 'Zero-touch provisioning & enterprise MDM', count: '51 planned', severity: 'primary' }
 ];
 
 const TestCatalog = () => {
@@ -146,9 +103,7 @@ const TestCatalog = () => {
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3200);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   useEffect(() => {
@@ -168,14 +123,14 @@ const TestCatalog = () => {
     };
   }, []);
 
-  const getCellColorClass = (val) => {
-    if (val === null || val === undefined) return 'empty';
-    if (val <= 2) return 'lvl-1';
-    if (val <= 6) return 'lvl-2';
-    if (val <= 12) return 'lvl-3';
-    if (val <= 20) return 'lvl-4';
-    if (val <= 30) return 'lvl-5';
-    return 'lvl-max';
+  const getCellColor = (val, isSelected) => {
+    if (isSelected) return 'bg-blue-600 text-white font-bold ring-2 ring-blue-400 ring-offset-2 ring-offset-[#080b12]';
+    if (val === null || val === undefined) return 'bg-slate-900/40 text-slate-700 hover:bg-slate-800/40';
+    if (val <= 2) return 'bg-blue-950/40 text-blue-400 border border-blue-900/40 hover:bg-blue-900/40';
+    if (val <= 6) return 'bg-blue-900/50 text-blue-300 border border-blue-800/60 hover:bg-blue-800/60';
+    if (val <= 15) return 'bg-blue-700/60 text-blue-200 border border-blue-600/60 hover:bg-blue-600/60';
+    if (val <= 30) return 'bg-blue-600/70 text-white font-semibold hover:bg-blue-500/70';
+    return 'bg-blue-500 text-white font-bold shadow-sm shadow-blue-500/30';
   };
 
   const handleCellClick = (rowId, colKey, val) => {
@@ -193,7 +148,7 @@ const TestCatalog = () => {
 
   const handleAddToPlan = () => {
     const selectedCount = testCases.filter(c => c.checked).length;
-    showToast(`Added ${selectedCount} test cases from ${selectedRowObj.name} × ${selectedColObj.label.replace('\n', ' ')} to test plan.`);
+    showToast(`Added ${selectedCount} cases from ${selectedRowObj.name} (${selectedColObj.label}) to pipeline`);
   };
 
   const handleCreateCaseSubmit = (e) => {
@@ -214,336 +169,336 @@ const TestCatalog = () => {
       ...prev
     ]);
     setNewTestCaseModal(false);
-    showToast(`Created test case: ${createdId}`);
+    showToast(`Registered test case: ${createdId}`);
   };
 
   return (
-    <div className="test-catalog-page">
-      <div className="catalog-filters-card">
-        <div className="filters-row">
-          <div className="filters-row-label">Quick groups</div>
-          <div className="filters-chips-wrap">
-            {QUICK_GROUPS.map((group) => (
-              <button
-                key={group}
-                className={`catalog-pill-btn ${activeGroup === group ? 'active' : ''}`}
-                onClick={() => setActiveGroup(group)}
-              >
-                {group}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="filters-row">
-          <div className="filters-row-label">Filter by tag</div>
-          <div className="filters-chips-wrap">
-            {TAG_FILTERS.map((tag) => (
-              <button
-                key={tag}
-                className="tag-filter-pill"
-                onClick={() => showToast(`Applied tag filter: ${tag}`)}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="catalog-main-layout">
-        <div className="catalog-left-col">
-          <div className="catalog-card">
-            <div className="catalog-card-header">
-              <div>
-                <div className="catalog-card-title">
-                  Coverage matrix: component × test type
-                </div>
-                <div className="catalog-card-subtitle">
-                  Each case has one component and one type, plus tags. Select a cell to see its cases.
-                </div>
-              </div>
-
-              <div className="heatmap-legend-box">
-                <span>0</span>
-                <div className="heatmap-gradient-bar"></div>
-                <span>88</span>
-              </div>
-            </div>
-
-            <div className="matrix-table-container">
-              <table className="matrix-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '22%' }}>Component</th>
-                    {MATRIX_COLUMNS.map(col => (
-                      <th key={col.key} style={{ width: '9%' }}>
-                        {col.label.split('\n').map((line, i) => (
-                          <div key={i}>{line}</div>
-                        ))}
-                      </th>
-                    ))}
-                    <th style={{ width: '6%' }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {MATRIX_ROWS.map((row) => (
-                    <tr key={row.id}>
-                      <td className="matrix-component-cell">
-                        <span>{row.name}</span>
-                        {row.isPlanned && <span className="planned-tag">Planned</span>}
-                      </td>
-
-                      {MATRIX_COLUMNS.map((col) => {
-                        const val = row.values[col.key];
-                        const isSelected = selectedCell.rowId === row.id && selectedCell.colKey === col.key;
-                        const colorClass = getCellColorClass(val);
-
-                        return (
-                          <td key={col.key}>
-                            <div
-                              className={`matrix-cell ${colorClass} ${isSelected ? 'active-cell' : ''}`}
-                              onClick={() => handleCellClick(row.id, col.key, val)}
-                            >
-                              {val !== null && val !== undefined ? val : '—'}
-                            </div>
-                          </td>
-                        );
-                      })}
-
-                      <td>
-                        <div className="matrix-total-cell">
-                          {row.total}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-
-                  <tr style={{ borderTop: '2px solid #e2e8f0' }}>
-                    <td className="matrix-component-cell" style={{ fontWeight: 700, paddingTop: '10px' }}>
-                      Total
-                    </td>
-                    {MATRIX_COLUMNS.map((col) => (
-                      <td key={col.key} style={{ paddingTop: '10px' }}>
-                        <div className="matrix-total-cell">
-                          {COLUMN_TOTALS[col.key]}
-                        </div>
-                      </td>
-                    ))}
-                    <td style={{ paddingTop: '10px' }}>
-                      <div className="matrix-grand-total-pill">
-                        {COLUMN_TOTALS.grandTotal}
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="matrix-footer-note">
-              Regression, smoke and nightly are saved test plans built from this catalog, not separate test types.
-            </div>
-          </div>
-        </div>
-
-        <div className="catalog-right-col">
-          <div className="catalog-card">
-            <div className="catalog-card-header" style={{ marginBottom: '12px' }}>
-              <div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                  {selectedRowObj.name} × {selectedColObj.label.replace('\n', ' ')}
-                </div>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', marginTop: '2px' }}>
-                  {selectedCellCount} cases · 1 h 10 m
-                </div>
-              </div>
-
-              <button
-                className="btn btn-primary"
-                onClick={handleAddToPlan}
-                style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px', backgroundColor: '#1d4ed8' }}
-              >
-                Add to plan
-              </button>
-            </div>
-
-            <div className="cases-list">
-              {testCases.map((c) => (
-                <div key={c.id} className="case-item">
-                  <input
-                    type="checkbox"
-                    className="case-checkbox"
-                    checked={c.checked}
-                    onChange={() => toggleCaseCheckbox(c.id)}
-                  />
-                  <div className="case-info">
-                    <div className="case-name">{c.name}</div>
-                    <div className="case-desc">{c.desc}</div>
-                    <div className="case-tags-row">
-                      <span className="case-tag priority">{c.priority}</span>
-                      <span className="case-tag">{c.duration}</span>
-                      <span className="case-tag">{c.models}</span>
-                      <span className="case-tag">{c.android}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <span
-              className="case-show-more-link"
-              onClick={() => setShowAllModal(true)}
-            >
-              Show all {selectedCellCount}
-            </span>
-          </div>
-
-          <div className="catalog-card">
-            <div className="catalog-card-header" style={{ marginBottom: '12px' }}>
-              <div className="catalog-card-title">Coverage gaps</div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>135 planned</div>
-            </div>
-
-            <div className="gaps-list">
-              {COVERAGE_GAPS.map((gap, index) => (
-                <div key={index} className="gap-item">
-                  <span className="gap-name">{gap.name}</span>
-                  <span className="gap-count">{gap.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-6">
+      {/* Toast */}
       {toastMessage && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: '#111827',
-          color: '#ffffff',
-          padding: '12px 18px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: '500',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
-          zIndex: 2000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <span style={{ color: '#10b981' }}>✓</span>
-          {toastMessage}
+        <div className="fixed bottom-6 right-6 bg-slate-900 border border-slate-700/80 text-white px-4 py-2.5 rounded-lg text-xs font-medium shadow-2xl flex items-center gap-2.5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="size-2 rounded-full bg-blue-500 animate-ping" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {showAllModal && (
-        <div className="catalog-modal-backdrop" onClick={() => setShowAllModal(false)}>
-          <div className="catalog-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="catalog-modal-header">
-              <h3>All {selectedCellCount} Test Cases: {selectedRowObj.name}</h3>
-              <button onClick={() => setShowAllModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+      {/* Header bar */}
+      <div className="bg-[#0d121f] border border-slate-800/80 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-blue-400 font-medium">Test Architecture Matrix</span>
+            <span className="text-slate-600">/</span>
+            <span className="text-xs text-slate-400 font-mono">345 Verified Robot Framework Tags</span>
+          </div>
+          <h1 className="text-base font-semibold text-slate-100 mt-0.5">Component × Test Type Coverage Heatmap</h1>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            icon={RefreshCw} 
+            onClick={() => showToast('Refreshed git repository test catalog tags')}
+          >
+            Sync Tags
+          </Button>
+          <Button 
+            variant="primary" 
+            size="sm" 
+            icon={Plus} 
+            onClick={() => setNewTestCaseModal(true)}
+          >
+            New Test Case
+          </Button>
+        </div>
+      </div>
+
+      {/* Filter chips bar */}
+      <div className="bg-[#0d121f] border border-slate-800/80 rounded-xl p-3.5 space-y-2.5 shadow-sm">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono">
+          <span className="text-[11px] text-slate-500 uppercase tracking-wider shrink-0 font-medium">Domain:</span>
+          {QUICK_GROUPS.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setActiveGroup(g)}
+              className={`px-2.5 py-1 rounded-md text-[11px] transition-all whitespace-nowrap ${
+                activeGroup === g
+                  ? 'bg-blue-600 text-white font-medium shadow-sm'
+                  : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto text-xs font-mono pt-1.5 border-t border-slate-800/60">
+          <span className="text-[11px] text-slate-500 uppercase tracking-wider shrink-0 font-medium">Tag Filters:</span>
+          {TAG_FILTERS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => showToast(`Applied tag filter: ${t}`)}
+              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10.5px] text-slate-400 hover:text-slate-200 hover:border-slate-700 whitespace-nowrap"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Grid: Heatmap Matrix (Left) & Inspector + Gaps (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left: Heatmap Matrix */}
+        <div className="lg:col-span-8 bg-[#0d121f] border border-slate-800/80 rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <Grid className="size-4 text-blue-400" />
+                Coverage Heatmap
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">Click any cell to inspect executable test cases and assign to pipelines</p>
             </div>
-            <div className="catalog-modal-body">
-              <div className="cases-list">
-                {testCases.map((c) => (
-                  <div key={c.id} className="case-item">
+            {/* Heatmap Legend */}
+            <div className="flex items-center gap-2 text-[10.5px] font-mono text-slate-400">
+              <span>0</span>
+              <div className="w-24 h-2 rounded-full bg-gradient-to-r from-slate-900 via-blue-900 to-blue-500 border border-slate-800" />
+              <span>88+</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-slate-800">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-[#090d16] border-b border-slate-800 text-slate-400 font-mono text-[11px] uppercase tracking-wider">
+                <tr>
+                  <th className="py-2.5 px-3 font-medium">Subsystem / Component</th>
+                  {MATRIX_COLUMNS.map(col => (
+                    <th key={col.key} className="py-2.5 px-2 text-center font-medium">{col.label}</th>
+                  ))}
+                  <th className="py-2.5 px-3 text-right font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-mono text-[11.5px]">
+                {MATRIX_ROWS.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-800/20">
+                    <td className="py-2.5 px-3 font-sans font-medium text-slate-300 flex items-center gap-2">
+                      <span>{row.name}</span>
+                      {row.isPlanned && <Badge variant="warning" className="text-[9.5px] py-0 px-1">Planned</Badge>}
+                    </td>
+                    {MATRIX_COLUMNS.map(col => {
+                      const val = row.values[col.key];
+                      const isSelected = selectedCell.rowId === row.id && selectedCell.colKey === col.key;
+                      const hasVal = val !== null && val !== undefined;
+
+                      return (
+                        <td key={col.key} className="py-1 px-1 text-center">
+                          <button
+                            type="button"
+                            disabled={!hasVal}
+                            onClick={() => handleCellClick(row.id, col.key, val)}
+                            className={`w-9 h-7 rounded text-[11px] transition-all flex items-center justify-center mx-auto cursor-pointer disabled:cursor-not-allowed ${getCellColor(val, isSelected)}`}
+                          >
+                            {hasVal ? val : '·'}
+                          </button>
+                        </td>
+                      );
+                    })}
+                    <td className="py-2.5 px-3 text-right font-semibold text-slate-300">
+                      {row.total}
+                    </td>
+                  </tr>
+                ))}
+                {/* Total Row */}
+                <tr className="bg-[#090d16] border-t-2 border-slate-700/80 font-bold text-slate-200">
+                  <td className="py-3 px-3 uppercase text-[11px]">Subsystem Grand Totals</td>
+                  {MATRIX_COLUMNS.map(col => (
+                    <td key={col.key} className="py-3 px-2 text-center text-blue-400">
+                      {COLUMN_TOTALS[col.key]}
+                    </td>
+                  ))}
+                  <td className="py-3 px-3 text-right text-emerald-400">
+                    {COLUMN_TOTALS.grandTotal}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right: Inspector and Coverage Gaps */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Test Case Inspector */}
+          <div className="bg-[#0d121f] border border-slate-800/80 rounded-xl p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div>
+                <span className="text-[10.5px] font-mono uppercase text-slate-500">Selected Cell</span>
+                <h3 className="text-xs font-semibold text-slate-200">
+                  {selectedRowObj.name} × {selectedColObj.label}
+                </h3>
+              </div>
+              <Button variant="primary" size="sm" onClick={handleAddToPlan}>
+                Stage in Plan
+              </Button>
+            </div>
+
+            <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+              {testCases.map((c) => (
+                <div
+                  key={c.id}
+                  className="p-2.5 rounded-lg border border-slate-800 bg-[#111622]/60 text-xs space-y-1.5"
+                >
+                  <div className="flex items-start gap-2">
                     <input
                       type="checkbox"
-                      className="case-checkbox"
                       checked={c.checked}
                       onChange={() => toggleCaseCheckbox(c.id)}
+                      className="mt-0.5 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0"
                     />
-                    <div className="case-info">
-                      <div className="case-name">{c.name}</div>
-                      <div className="case-desc">{c.desc}</div>
-                      <div className="case-tags-row">
-                        <span className="case-tag priority">{c.priority}</span>
-                        <span className="case-tag">{c.duration}</span>
-                        <span className="case-tag">{c.models}</span>
-                        <span className="case-tag">{c.android}</span>
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-mono text-[11px] font-semibold text-slate-200 truncate">{c.name}</div>
+                      <p className="text-[10.5px] text-slate-400 mt-0.5 leading-snug">{c.desc}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-1.5 pl-5 pt-1 text-[10px] font-mono text-slate-500">
+                    <Badge variant={c.priority === 'P1' ? 'danger' : 'neutral'} className="text-[9.5px] py-0 px-1">
+                      {c.priority}
+                    </Badge>
+                    <span className="px-1.5 py-0.5 bg-slate-800 rounded">{c.duration}</span>
+                    <span className="px-1.5 py-0.5 bg-slate-800 rounded">{c.models}</span>
+                    <span className="px-1.5 py-0.5 bg-slate-800 rounded">{c.android}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="catalog-modal-footer">
-              <button className="btn btn-primary" onClick={() => setShowAllModal(false)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {newTestCaseModal && (
-        <div className="catalog-modal-backdrop" onClick={() => setNewTestCaseModal(false)}>
-          <div className="catalog-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="catalog-modal-header">
-              <h3>New Test Case Definition</h3>
-              <button onClick={() => setNewTestCaseModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs" 
+              onClick={() => setShowAllModal(true)}
+            >
+              Inspect All {selectedCellCount} Cases
+            </Button>
+          </div>
+
+          {/* Coverage Gaps Roadmap */}
+          <div className="bg-[#0d121f] border border-slate-800/80 rounded-xl p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5 text-amber-400" />
+                Coverage Gaps (135 Planned)
+              </h3>
             </div>
-            <form onSubmit={handleCreateCaseSubmit}>
-              <div className="catalog-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Test Identifier</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. DRV_NFC_STRESS_001"
-                    value={newCaseForm.id}
-                    onChange={(e) => setNewCaseForm({ ...newCaseForm, id: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-                  />
+
+            <div className="space-y-2 text-xs">
+              {COVERAGE_GAPS.map((gap, idx) => (
+                <div key={idx} className="p-2 rounded-lg border border-slate-800/80 bg-[#111622]/40 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-300 font-medium truncate">{gap.name}</span>
+                  <Badge variant={gap.severity} className="text-[10px] shrink-0 font-mono">{gap.count}</Badge>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Description / Test Scenario</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. NFC field polling loop with card present"
-                    value={newCaseForm.name}
-                    onChange={(e) => setNewCaseForm({ ...newCaseForm, name: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Component</label>
-                    <select
-                      value={newCaseForm.component}
-                      onChange={(e) => setNewCaseForm({ ...newCaseForm, component: e.target.value })}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-                    >
-                      <option>Kernel & drivers</option>
-                      <option>Bootloader</option>
-                      <option>HAL</option>
-                      <option>Android framework</option>
-                      <option>Connectivity</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Test Type</label>
-                    <select
-                      value={newCaseForm.type}
-                      onChange={(e) => setNewCaseForm({ ...newCaseForm, type: e.target.value })}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-                    >
-                      <option>Stress</option>
-                      <option>Sanity</option>
-                      <option>Functional</option>
-                      <option>Perf / stability</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="catalog-modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setNewTestCaseModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#1d4ed8' }}>Create Case</button>
-              </div>
-            </form>
+              ))}
+            </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Modal: All Test Cases */}
+      <Modal
+        isOpen={showAllModal}
+        onClose={() => setShowAllModal(false)}
+        title={`All ${selectedCellCount} Cases: ${selectedRowObj.name}`}
+        description="Comprehensive list of verified Robot Framework test identifiers for this component."
+        icon={Grid}
+        footer={
+          <Button variant="primary" onClick={() => setShowAllModal(false)}>
+            Close
+          </Button>
+        }
+      >
+        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+          {testCases.map((c) => (
+            <div key={c.id} className="p-2.5 rounded-lg border border-slate-800 bg-[#111622] text-xs">
+              <div className="font-mono text-slate-200 font-medium">{c.name}</div>
+              <p className="text-slate-400 text-[11px] mt-0.5">{c.desc}</p>
+              <div className="flex items-center gap-2 mt-2 text-[10px] font-mono text-slate-500">
+                <span className="text-amber-400">{c.priority}</span>
+                <span>{c.duration}</span>
+                <span>{c.models}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      {/* Modal: New Test Case */}
+      <Modal
+        isOpen={newTestCaseModal}
+        onClose={() => setNewTestCaseModal(false)}
+        title="Register New Test Definition"
+        description="Add a new Robot Framework test definition to the matrix catalog."
+        icon={Plus}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setNewTestCaseModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleCreateCaseSubmit}>
+              Register Case
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleCreateCaseSubmit} className="space-y-3 text-xs">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-400 mb-1">Test Identifier</label>
+            <input
+              type="text"
+              placeholder="e.g. DRV_NFC_STRESS_001"
+              value={newCaseForm.id}
+              onChange={(e) => setNewCaseForm({ ...newCaseForm, id: e.target.value })}
+              className="w-full bg-[#111622] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-400 mb-1">Scenario Description</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. NFC field polling loop with card present"
+              value={newCaseForm.name}
+              onChange={(e) => setNewCaseForm({ ...newCaseForm, name: e.target.value })}
+              className="w-full bg-[#111622] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">Component</label>
+              <select
+                value={newCaseForm.component}
+                onChange={(e) => setNewCaseForm({ ...newCaseForm, component: e.target.value })}
+                className="w-full bg-[#111622] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none"
+              >
+                <option>Kernel & Drivers</option>
+                <option>Bootloader</option>
+                <option>Hardware Abstraction (HAL)</option>
+                <option>RF & Connectivity</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">Test Type</label>
+              <select
+                value={newCaseForm.type}
+                onChange={(e) => setNewCaseForm({ ...newCaseForm, type: e.target.value })}
+                className="w-full bg-[#111622] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none"
+              >
+                <option>Stress</option>
+                <option>Sanity</option>
+                <option>Functional</option>
+                <option>Perf</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

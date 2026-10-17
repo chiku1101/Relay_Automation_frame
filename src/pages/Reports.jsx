@@ -1,4 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  FileText, 
+  Search, 
+  Download, 
+  Share2, 
+  Copy, 
+  CheckCircle2, 
+  AlertTriangle, 
+  X, 
+  ExternalLink, 
+  ArrowRight,
+  TrendingDown,
+  TrendingUp,
+  Sliders,
+  Calendar,
+  Layers,
+  ChevronRight,
+  ShieldAlert,
+  Play
+} from 'lucide-react';
 
 const INITIAL_RUNS = [
   {
@@ -58,46 +78,35 @@ const INITIAL_RUNS = [
     plan: 'Nightly Regression',
     build: '2.3.9 (0919)',
     passCount: 332,
-    failCount: 11,
-    skipCount: 2,
-    duration: '3 h 01 m',
-    date: 'Sep 20 01:00',
+    failCount: 5,
+    skipCount: 1,
+    duration: '2 h 58 m',
+    date: 'Sep 19 01:00',
     result: 'Failed',
     device: 'Relay X-001 · RX1A0231 · Android 16',
     trigger: 'triggered by schedule'
   },
   {
-    id: '#1030',
+    id: '#1027',
     plan: 'PTT Smoke',
     build: '2.3.9 (0919)',
-    passCount: 5,
+    passCount: 12,
     failCount: 0,
     skipCount: 0,
-    duration: '12 m',
-    date: 'Sep 19 00:20',
+    duration: '14 m',
+    date: 'Sep 18 16:30',
     result: 'Passed',
     device: 'Relay X-001 · RX1A0231 · Android 16',
-    trigger: 'triggered by CI webhook'
+    trigger: 'triggered by new build'
   }
 ];
 
 const FAILURES_1039 = [
   {
-    id: 'f1',
-    test: 'CONN_WIFI_ROAM_014',
-    component: 'Connectivity · Wi-Fi',
-    error: 'Roam to AP-2 took 4.8 s, limit 2 s',
-    since: 'New in 0925',
-    sinceType: 'new',
-    evidence: ['log', 'screenshot', 'video'],
-    bug: 'RLY-2231',
-    isBugLink: true
-  },
-  {
-    id: 'f2',
-    test: 'PTT_FLOOR_003',
-    component: 'PTT service',
-    error: 'Floor grant not received within 500 ms',
+    id: 1,
+    test: 'testFastBssTransition',
+    component: 'Connectivity · Wi-Fi Roaming',
+    error: 'AssertFailed: roam time 4812ms > 2000ms threshold',
     since: 'New in 0925',
     sinceType: 'new',
     evidence: ['log', 'screenshot', 'video'],
@@ -105,52 +114,89 @@ const FAILURES_1039 = [
     isBugLink: false
   },
   {
-    id: 'f3',
-    test: 'DRV_I2C_STRESS_022',
-    component: 'Kernel & drivers',
-    error: 'i2c-3 timeout after 1,800 transfers',
-    since: 'Since 0905',
-    sinceType: 'older',
-    evidence: ['log', 'screenshot'],
-    bug: 'RLY-2198',
+    id: 2,
+    test: 'testWpa3EnterpriseAuth',
+    component: 'Connectivity · Wi-Fi Security',
+    error: 'EAP-TLS handshake timeout after 30s',
+    since: 'Since 0919 (3 runs)',
+    sinceType: 'recurring',
+    evidence: ['log'],
+    bug: 'RLY-2184',
     isBugLink: true
   },
   {
-    id: 'f4',
-    test: 'SYSUI_QS_TILE_011',
-    component: 'System UI',
-    error: 'Wi-Fi tile state not updated after toggle',
+    id: 3,
+    test: 'testPttFloorRequestUnderLoad',
+    component: 'PTT Service · Audio Routing',
+    error: 'Floor-grant latency 680ms > 350ms budget',
     since: 'New in 0925',
     sinceType: 'new',
-    evidence: ['log', 'screenshot', 'video'],
-    bug: 'RLY-2234',
+    evidence: ['log', 'screenshot'],
+    bug: 'Create bug',
+    isBugLink: false
+  },
+  {
+    id: 4,
+    test: 'testThermalThrottlingDutyCycle',
+    component: 'Kernel & Thermal · Governor',
+    error: 'CPU clock throttled to 1.1GHz during active call',
+    since: 'Since 0912 (5 runs)',
+    sinceType: 'recurring',
+    evidence: ['log'],
+    bug: 'RLY-2102',
     isBugLink: true
   },
   {
-    id: 'f5',
-    test: 'BT_A2DP_RECONN_07',
-    component: 'Connectivity · BT',
-    error: 'Headset reconnect failed (flaky: 3 of 10)',
-    since: 'Flaky',
-    sinceType: 'flaky',
+    id: 5,
+    test: 'testHeadsetInsertionDebounce',
+    component: 'Audio & HAL · Wired Headset',
+    error: 'Jack state flapped twice in 50ms',
+    since: 'New in 0925',
+    sinceType: 'new',
     evidence: ['log', 'screenshot'],
-    bug: 'RLY-2170',
-    isBugLink: true
+    bug: 'Create bug',
+    isBugLink: false
+  },
+  {
+    id: 6,
+    test: 'testBtA2dpReconnectionLoop',
+    component: 'Connectivity · Bluetooth Stack',
+    error: 'ACL link disconnected reason: LMP response timeout',
+    since: 'Flaky (2/5 pass)',
+    sinceType: 'flaky',
+    evidence: ['log', 'video'],
+    bug: 'Create bug',
+    isBugLink: false
+  },
+  {
+    id: 7,
+    test: 'testFastbootRebootToSystem',
+    component: 'Bootloader · Lifecycle',
+    error: 'Device took 42s to reach boot_completed > 30s SLA',
+    since: 'New in 0925',
+    sinceType: 'new',
+    evidence: ['log'],
+    bug: 'Create bug',
+    isBugLink: false
   }
 ];
 
 const Reports = () => {
-  const [searchQuery, setSearchQuery] = useState('RX1A0231');
-  const [deviceChipActive, setDeviceChipActive] = useState(true);
-  const [buildChipActive, setBuildChipActive] = useState(true);
   const [selectedRunId, setSelectedRunId] = useState('#1039');
   const [activeTab, setActiveTab] = useState('failures');
-  const [compareCheckboxes, setCompareCheckboxes] = useState({
-    '#1047': true,
-    '#1031': true
-  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  
+  const [deviceChipActive, setDeviceChipActive] = useState(true);
+  const [buildChipActive, setBuildChipActive] = useState(true);
+
+  const [compareCheckboxes, setCompareCheckboxes] = useState({ '#1039': true, '#1031': true });
   const [leftBuild, setLeftBuild] = useState('2.3.9 (0919)');
   const [rightBuild, setRightBuild] = useState('2.4.0 (0926)');
+
+  const [activeEvidenceModal, setActiveEvidenceModal] = useState(null);
+  const [createBugModal, setCreateBugModal] = useState(null);
+
   const [shareConfig, setShareConfig] = useState({
     whoCanOpen: 'organization',
     expires: '30days',
@@ -159,34 +205,21 @@ const Reports = () => {
     videos: false,
     deviceMetrics: true
   });
-  const [toastMessage, setToastMessage] = useState(null);
-  const [activeEvidenceModal, setActiveEvidenceModal] = useState(null);
-  const [createBugModal, setCreateBugModal] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3200);
+    setTimeout(() => setToastMessage(''), 3000);
   };
 
-  useEffect(() => {
-    const handleExportCSV = () => {
-      showToast('Exporting reports dataset to Relay-Reports-Export.csv...');
-    };
-    window.addEventListener('export-reports-csv', handleExportCSV);
-    return () => window.removeEventListener('export-reports-csv', handleExportCSV);
-  }, []);
-
   const toggleCompareRun = (id) => {
-    setCompareCheckboxes(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+    setCompareCheckboxes(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      return next;
+    });
   };
 
   const handleCopyLink = () => {
-    const link = `https://relay-qa.corp.internal/reports/run-${selectedRunId.replace('#', '')}`;
+    const link = `https://relay-qa.internal/reports/run-${selectedRunId.replace('#', '')}`;
     navigator.clipboard?.writeText(link);
     showToast(`Copied share link to clipboard: relay-qa/reports/run-${selectedRunId.replace('#', '')}`);
   };
@@ -204,109 +237,143 @@ const Reports = () => {
 
   const selectedRunObj = INITIAL_RUNS.find(r => r.id === selectedRunId) || INITIAL_RUNS[2];
 
+  const getResultBadge = (result) => {
+    switch (result?.toLowerCase()) {
+      case 'running':
+        return 'bg-blue-500/15 text-blue-400 border-blue-500/30';
+      case 'passed':
+        return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+      case 'failed':
+        return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+      default:
+        return 'bg-slate-800 text-slate-400 border-slate-700';
+    }
+  };
+
   return (
-    <div className="reports-page">
-      <div className="reports-filter-card">
-        <div className="reports-search-bar">
-          <div className="reports-search-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </div>
+    <div className="space-y-6">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-slate-100 px-4 py-2.5 rounded-xl text-xs font-medium shadow-2xl border border-slate-700 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="size-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Filter and Query Header */}
+      <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-3 size-4 text-slate-500" />
           <input
             type="text"
-            className="reports-search-input"
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-9 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by device, serial number, run #, test name, or build..."
+            placeholder="Search runs by device serial, run ID (#1039), test name, or firmware build..."
           />
           {searchQuery && (
-            <button className="reports-search-clear" onClick={() => setSearchQuery('')} title="Clear search">
-              ✕
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+            >
+              <X className="size-4" />
             </button>
           )}
         </div>
 
-        <div className="reports-chips-row">
-          <div className="reports-chips-group">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {deviceChipActive && (
-              <span className="filter-chip-active">
+              <span className="px-2.5 py-1 rounded-lg bg-blue-600/15 border border-blue-500/30 text-blue-400 text-xs font-mono flex items-center gap-1.5">
                 Device: Relay X-001 (RX1A0231)
-                <button className="chip-remove-btn" onClick={() => setDeviceChipActive(false)}>✕</button>
+                <button onClick={() => setDeviceChipActive(false)} className="hover:text-blue-200">✕</button>
               </span>
             )}
             {buildChipActive && (
-              <span className="filter-chip-active">
-                Build: 2.3.9 (0919) → 2.4.0 (0926)
-                <button className="chip-remove-btn" onClick={() => setBuildChipActive(false)}>✕</button>
+              <span className="px-2.5 py-1 rounded-lg bg-blue-600/15 border border-blue-500/30 text-blue-400 text-xs font-mono flex items-center gap-1.5">
+                Build: 2.3.9 → 2.4.0
+                <button onClick={() => setBuildChipActive(false)} className="hover:text-blue-200">✕</button>
               </span>
             )}
 
-            <button className="filter-chip-btn" onClick={() => showToast('Filter by Plan')}>+ Plan</button>
-            <button className="filter-chip-btn" onClick={() => showToast('Filter by Component')}>+ Component</button>
-            <button className="filter-chip-btn" onClick={() => showToast('Filter by Result status')}>+ Result</button>
-            <button className="filter-chip-btn" onClick={() => showToast('Filter by Trigger trigger')}>+ Triggered by</button>
-            <button className="filter-chip-btn" onClick={() => showToast('Select date range')}>Date: last 30 days</button>
+            <button onClick={() => showToast('Filter by Plan')} className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono">
+              + Plan
+            </button>
+            <button onClick={() => showToast('Filter by Component')} className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono">
+              + Component
+            </button>
+            <button onClick={() => showToast('Filter by Result')} className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono">
+              + Result
+            </button>
+            <button onClick={() => showToast('Filter by Date')} className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono">
+              Date: 30 days
+            </button>
           </div>
 
-          <div className="reports-summary-count">
-            6 runs · 1,187 test executions
+          <div className="text-xs font-mono text-slate-500 shrink-0">
+            {filteredRuns.length} runs · 1,187 test executions
           </div>
         </div>
       </div>
 
-      <div className="reports-main-layout">
-        <div className="reports-left-col">
-          <div className="reports-card">
-            <div className="reports-card-header">
-              <div className="reports-card-title">Runs</div>
-              <div className="reports-card-subtitle">Select two runs to compare</div>
+      {/* Main 2-Column Split: Runs Table & Comparison */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Left Column: Runs List & Detailed Inspector (7 cols) */}
+        <div className="lg:col-span-7 space-y-5">
+          {/* Runs Table */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-4 shadow-xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Execution History</h2>
+              <span className="text-[11px] font-mono text-slate-500">Check boxes to compare two runs</span>
             </div>
 
-            <div className="reports-table-container">
-              <table className="reports-runs-table">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr>
-                    <th style={{ width: '32px' }}></th>
-                    <th>Run</th>
-                    <th>Plan</th>
-                    <th>Build</th>
-                    <th>Pass / fail / skip</th>
-                    <th>Duration</th>
-                    <th>Date</th>
-                    <th>Result</th>
+                  <tr className="border-b border-slate-800 text-[10.5px] font-mono text-slate-400 uppercase tracking-wider">
+                    <th className="py-2 px-2 w-8"></th>
+                    <th className="py-2 px-2">Run</th>
+                    <th className="py-2 px-2">Plan</th>
+                    <th className="py-2 px-2">Build</th>
+                    <th className="py-2 px-2">Pass / Fail / Skip</th>
+                    <th className="py-2 px-2">Duration</th>
+                    <th className="py-2 px-2">Result</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-800/50 font-mono text-[11.5px]">
                   {filteredRuns.map((r) => {
                     const isSelected = r.id === selectedRunId;
                     const isChecked = !!compareCheckboxes[r.id];
                     return (
-                      <tr 
-                        key={r.id} 
-                        className={isSelected ? 'selected-row' : ''}
+                      <tr
+                        key={r.id}
                         onClick={() => setSelectedRunId(r.id)}
-                        style={{ cursor: 'pointer' }}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected ? 'bg-blue-950/30 border-l-2 border-l-blue-500' : 'hover:bg-slate-900/40'
+                        }`}
                       >
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <input 
-                            type="checkbox" 
+                        <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleCompareRun(r.id)}
-                            style={{ cursor: 'pointer', accentColor: '#2563eb' }}
+                            className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-0"
                           />
                         </td>
-                        <td className="run-id-cell">{r.id}</td>
-                        <td className="run-plan-cell">{r.plan}</td>
-                        <td className="run-build-cell">{r.build}</td>
-                        <td className="counts-cell">
-                          <span className="counts-pass">{r.passCount}</span> / <span className="counts-fail">{r.failCount}</span> / <span className="counts-skip">{r.skipCount}</span>
+                        <td className="py-2.5 px-2 font-bold text-slate-200">{r.id}</td>
+                        <td className="py-2.5 px-2 font-sans font-medium text-slate-300">{r.plan}</td>
+                        <td className="py-2.5 px-2 text-slate-400">{r.build}</td>
+                        <td className="py-2.5 px-2">
+                          <span className="text-emerald-400 font-bold">{r.passCount}</span>
+                          <span className="text-slate-600"> / </span>
+                          <span className="text-rose-400 font-bold">{r.failCount}</span>
+                          <span className="text-slate-600"> / </span>
+                          <span className="text-slate-500">{r.skipCount}</span>
                         </td>
-                        <td style={{ color: '#4b5563' }}>{r.duration}</td>
-                        <td style={{ color: '#6b7280', fontSize: '12px' }}>{r.date}</td>
-                        <td>
-                          <span className={`status-badge ${r.result.toLowerCase()}`}>
+                        <td className="py-2.5 px-2 text-slate-400">{r.duration}</td>
+                        <td className="py-2.5 px-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${getResultBadge(r.result)}`}>
                             {r.result}
                           </span>
                         </td>
@@ -318,111 +385,107 @@ const Reports = () => {
             </div>
           </div>
 
-          <div className="reports-card">
-            <div className="reports-card-header" style={{ alignItems: 'flex-start' }}>
+          {/* Detailed Inspector Card for Selected Run */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
               <div>
-                <div className="reports-card-title" style={{ fontSize: '16px' }}>
-                  Run {selectedRunObj.id} · {selectedRunObj.plan}
+                <div className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <span>Run {selectedRunObj.id}</span>
+                  <span className="text-slate-500">·</span>
+                  <span>{selectedRunObj.plan}</span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                  Relay X-001 · RX1A0231 · Android 16 · build {selectedRunObj.build} · {selectedRunObj.duration} · {selectedRunObj.trigger}
+                <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                  {selectedRunObj.device} · duration {selectedRunObj.duration}
                 </div>
               </div>
-              <span className={`status-badge ${selectedRunObj.result.toLowerCase()}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border self-start sm:self-auto ${getResultBadge(selectedRunObj.result)}`}>
                 {selectedRunObj.result}
               </span>
             </div>
 
-            <div className="run-details-tabs">
-              <button 
-                className={`run-tab-btn ${activeTab === 'summary' ? 'active' : ''}`}
-                onClick={() => setActiveTab('summary')}
-              >
-                Summary
-              </button>
-              <button 
-                className={`run-tab-btn ${activeTab === 'failures' ? 'active' : ''}`}
-                onClick={() => setActiveTab('failures')}
-              >
-                Failures (7)
-              </button>
-              <button 
-                className={`run-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-                onClick={() => setActiveTab('all')}
-              >
-                All cases (345)
-              </button>
-              <button 
-                className={`run-tab-btn ${activeTab === 'logs' ? 'active' : ''}`}
-                onClick={() => setActiveTab('logs')}
-              >
-                Logs
-              </button>
-              <button 
-                className={`run-tab-btn ${activeTab === 'metrics' ? 'active' : ''}`}
-                onClick={() => setActiveTab('metrics')}
-              >
-                Device metrics
-              </button>
+            {/* Run Detail Tabs */}
+            <div className="flex items-center gap-1 border-b border-slate-800 pb-2">
+              {[
+                { id: 'failures', label: `Failures (${selectedRunObj.failCount})` },
+                { id: 'summary', label: 'Summary' },
+                { id: 'all', label: 'All Cases (345)' },
+                { id: 'logs', label: 'Log Stream' },
+                { id: 'metrics', label: 'Hardware Metrics' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1 text-xs rounded-lg font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
+            {/* Tab: Failures Table */}
             {activeTab === 'failures' && (
-              <div className="reports-table-container">
-                <table className="failures-table">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr>
-                      <th style={{ width: '22%' }}>Test</th>
-                      <th style={{ width: '38%' }}>Error</th>
-                      <th style={{ width: '15%' }}>Since</th>
-                      <th style={{ width: '15%' }}>Evidence</th>
-                      <th style={{ width: '10%' }}>Bug</th>
+                    <tr className="border-b border-slate-800 text-[10.5px] font-mono text-slate-400 uppercase tracking-wider">
+                      <th className="py-2 px-2.5">Failing Test</th>
+                      <th className="py-2 px-2.5">Error Reason</th>
+                      <th className="py-2 px-2.5">First Seen</th>
+                      <th className="py-2 px-2.5">Artifacts</th>
+                      <th className="py-2 px-2.5">Jira Link</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-800/50 font-mono text-[11.5px]">
                     {FAILURES_1039.map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          <div className="test-name-title">{item.test}</div>
-                          <div className="test-component-sub">{item.component}</div>
+                      <tr key={item.id} className="hover:bg-slate-900/30 transition-colors">
+                        <td className="py-2.5 px-2.5">
+                          <div className="font-semibold text-slate-200">{item.test}</div>
+                          <div className="text-[10px] text-slate-500">{item.component}</div>
                         </td>
-                        <td>
-                          <div className="test-error-desc">{item.error}</div>
+                        <td className="py-2.5 px-2.5 text-rose-300 font-mono text-[11px] max-w-[200px] truncate">
+                          {item.error}
                         </td>
-                        <td>
-                          <span className={`since-badge ${item.sinceType}`}>
+                        <td className="py-2.5 px-2.5">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                            item.sinceType === 'new'
+                              ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                              : 'bg-slate-800 text-slate-400 border-slate-700'
+                          }`}>
                             {item.since}
                           </span>
                         </td>
-                        <td>
-                          <div className="evidence-links">
-                            {item.evidence.map((ev, idx) => (
-                              <React.Fragment key={ev}>
-                                <span 
-                                  className="evidence-link"
-                                  onClick={() => setActiveEvidenceModal({ test: item.test, type: ev, error: item.error })}
-                                >
-                                  {ev}
-                                </span>
-                                {idx < item.evidence.length - 1 && <span>·</span>}
-                              </React.Fragment>
+                        <td className="py-2.5 px-2.5">
+                          <div className="flex items-center gap-1.5">
+                            {item.evidence.map((ev) => (
+                              <button
+                                key={ev}
+                                onClick={() => setActiveEvidenceModal({ test: item.test, type: ev, error: item.error })}
+                                className="text-[10.5px] text-blue-400 hover:text-blue-300 hover:underline"
+                              >
+                                {ev}
+                              </button>
                             ))}
                           </div>
                         </td>
-                        <td>
+                        <td className="py-2.5 px-2.5">
                           {item.isBugLink ? (
-                            <span 
-                              className="bug-link"
-                              onClick={() => showToast(`Opening Jira ticket ${item.bug}...`)}
+                            <button
+                              onClick={() => showToast(`Opening Jira defect ${item.bug}...`)}
+                              className="text-amber-400 hover:underline font-mono text-xs"
                             >
                               {item.bug}
-                            </span>
+                            </button>
                           ) : (
-                            <span 
-                              className="bug-link"
+                            <button
                               onClick={() => setCreateBugModal(item)}
+                              className="px-2 py-0.5 rounded bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-[10.5px] font-sans font-medium"
                             >
-                              Create bug
-                            </span>
+                              + File Bug
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -432,342 +495,342 @@ const Reports = () => {
               </div>
             )}
 
+            {/* Tab: Summary */}
             {activeTab === 'summary' && (
-              <div style={{ padding: '16px 0', fontSize: '13px', color: '#4b5563', lineHeight: '1.6' }}>
-                <p><strong>Execution Summary:</strong> Total 345 test cases planned across 8 device test components.</p>
-                <p>Pass rate for this build is <strong>97.4%</strong> (336 passed, 7 failed, 2 skipped due to dependency preconditions).</p>
-                <p>Main regression area: <em>Wi-Fi Roaming handoff latency</em> and <em>PTT audio floor negotiation</em>.</p>
+              <div className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl space-y-2 text-xs text-slate-300 leading-relaxed font-mono">
+                <p><strong>Execution Status:</strong> Total 345 test cases planned across 8 device test components.</p>
+                <p>Pass rate for this build is <strong className="text-emerald-400">97.4%</strong> (336 passed, 7 failed, 2 skipped due to dependencies).</p>
+                <p>Top regression cluster: <em>Wi-Fi Roaming BSS transition latency</em> and <em>PTT audio floor-grant negotiation</em>.</p>
               </div>
             )}
 
-            {activeTab === 'all' && (
-              <div style={{ padding: '16px 0', fontSize: '13px', color: '#4b5563' }}>
-                Displaying 345 test executions for build {selectedRunObj.build}. Use search to filter specific test methods.
-              </div>
-            )}
-
+            {/* Tab: Log Stream */}
             {activeTab === 'logs' && (
-              <div style={{ padding: '16px 0' }}>
-                <div style={{ background: '#0f172a', color: '#f8fafc', padding: '14px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.5' }}>
-                  <div>[01:00:02.100] TEST_RUN_STARTED: Nightly Regression (runner: relay-orchestrator-v2)</div>
-                  <div>[01:00:03.450] DEVICE_CONNECTED: Relay X-001 (RX1A0231) via ADB over TLS</div>
-                  <div>[01:00:05.120] PACKAGE_INSTALLED: com.relay.qa.tests (targetSdk: 35)</div>
-                  <div>[01:04:12.890] FAIL: CONN_WIFI_ROAM_014 - AssertFailed: roam time 4812ms &gt; threshold 2000ms</div>
-                </div>
+              <div className="p-3 bg-black/80 border border-slate-900 rounded-xl font-mono text-[11px] text-slate-300 space-y-1 max-h-56 overflow-y-auto">
+                <div className="text-slate-500">[01:00:02.100] TEST_RUN_STARTED: Nightly Regression (runner: relay-orchestrator-v2)</div>
+                <div className="text-sky-400">[01:00:03.450] DEVICE_CONNECTED: Relay X-001 (RX1A0231) via ADB over TLS</div>
+                <div className="text-slate-300">[01:00:05.120] PACKAGE_INSTALLED: com.relay.qa.tests (targetSdk: 35)</div>
+                <div className="text-rose-400 font-bold">[01:04:12.890] FAIL: CONN_WIFI_ROAM_014 - AssertFailed: roam time 4812ms &gt; threshold 2000ms</div>
+                <div className="text-amber-300">[01:04:13.100] EVIDENCE_DUMP: Saved failure screenshot and bugreport snippet</div>
               </div>
             )}
 
+            {/* Tab: Hardware Metrics */}
             {activeTab === 'metrics' && (
-              <div style={{ padding: '16px 0', fontSize: '13px', color: '#4b5563', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-                <div style={{ border: '1px solid #e2e8f0', padding: '12px', borderRadius: '8px', background: '#f8fafc' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Peak Thermal</div>
-                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>41.8 °C</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <div className="text-[10.5px] font-mono text-slate-400">Peak Thermal</div>
+                  <div className="text-lg font-bold font-mono text-amber-400 mt-1">41.8 °C</div>
                 </div>
-                <div style={{ border: '1px solid #e2e8f0', padding: '12px', borderRadius: '8px', background: '#f8fafc' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Average Battery Drain</div>
-                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>1.9 %/h</div>
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <div className="text-[10.5px] font-mono text-slate-400">Battery Drain</div>
+                  <div className="text-lg font-bold font-mono text-emerald-400 mt-1">1.9 %/h</div>
                 </div>
-                <div style={{ border: '1px solid #e2e8f0', padding: '12px', borderRadius: '8px', background: '#f8fafc' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Memory High Watermark</div>
-                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>820 MB</div>
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <div className="text-[10.5px] font-mono text-slate-400">Memory High-Watermark</div>
+                  <div className="text-lg font-bold font-mono text-sky-400 mt-1">820 MB</div>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="reports-right-col">
-          <div className="reports-card">
-            <div className="reports-card-header">
-              <div className="reports-card-title">Build comparison</div>
-              <div className="reports-card-subtitle">Relay X-001 · Nightly</div>
+        {/* Right Column: Comparison & Share (5 cols) */}
+        <div className="lg:col-span-5 space-y-5">
+          
+          {/* Build Comparison Card */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div>
+                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">Build Delta Comparison</h3>
+                <p className="text-[11px] font-mono text-slate-500">Relay X-001 · Nightly Regression</p>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs font-mono">
+                Diff View
+              </span>
             </div>
 
-            <div className="compare-selectors-row">
-              <select 
-                className="compare-select" 
-                value={leftBuild} 
-                onChange={(e) => setLeftBuild(e.target.value)}
-              >
-                <option value="2.3.9 (0919)">2.3.9 (0919)</option>
-                <option value="2.3.8 (0912)">2.3.8 (0912)</option>
-                <option value="2.3.7 (0905)">2.3.7 (0905)</option>
-              </select>
-
-              <span className="compare-arrow">→</span>
-
-              <select 
-                className="compare-select" 
-                value={rightBuild} 
-                onChange={(e) => setRightBuild(e.target.value)}
-              >
-                <option value="2.4.0 (0926)">2.4.0 (0926)</option>
-                <option value="2.4.0 (0925)">2.4.0 (0925)</option>
-                <option value="2.4.0-rc1">2.4.0-rc1</option>
-              </select>
-            </div>
-
-            <div className="compare-stats-grid">
-              <div className="compare-stat-box">
-                <span className="compare-stat-label">Pass rate</span>
-                <span className="compare-stat-val">95.1%</span>
-                <span className="compare-stat-sub trend-down">▼ 1.2 pts</span>
+            {/* Comparison Selectors */}
+            <div className="grid grid-cols-11 items-center gap-2">
+              <div className="col-span-5">
+                <select
+                  value={leftBuild}
+                  onChange={(e) => setLeftBuild(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono"
+                >
+                  <option value="2.3.9 (0919)">2.3.9 (0919)</option>
+                  <option value="2.3.8 (0912)">2.3.8 (0912)</option>
+                  <option value="2.3.7 (0905)">2.3.7 (0905)</option>
+                </select>
               </div>
 
-              <div className="compare-stat-box">
-                <span className="compare-stat-label">New fails</span>
-                <span className="compare-stat-val">4</span>
-                <span className="compare-stat-sub">regressions</span>
-              </div>
+              <div className="col-span-1 text-center text-slate-500">→</div>
 
-              <div className="compare-stat-box">
-                <span className="compare-stat-label">Fixed</span>
-                <span className="compare-stat-val">2</span>
-                <span className="compare-stat-sub">now pass</span>
-              </div>
-
-              <div className="compare-stat-box">
-                <span className="compare-stat-label">Flaky</span>
-                <span className="compare-stat-val">3</span>
-                <span className="compare-stat-sub">mixed</span>
+              <div className="col-span-5">
+                <select
+                  value={rightBuild}
+                  onChange={(e) => setRightBuild(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono"
+                >
+                  <option value="2.4.0 (0926)">2.4.0 (0926)</option>
+                  <option value="2.4.0 (0925)">2.4.0 (0925)</option>
+                  <option value="2.4.0-rc1">2.4.0-rc1</option>
+                </select>
               </div>
             </div>
 
-            <div className="perf-power-section">
-              <div className="perf-power-title">Performance and power</div>
-              <table className="perf-power-table">
+            {/* Comparison Stat Badges */}
+            <div className="grid grid-cols-4 gap-2 text-center font-mono">
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div className="text-[10px] text-slate-500 uppercase">Pass Rate</div>
+                <div className="text-sm font-bold text-slate-200 mt-0.5">95.1%</div>
+                <div className="text-[9.5px] text-rose-400 mt-0.5">▼ 1.2 pts</div>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div className="text-[10px] text-slate-500 uppercase">New Fails</div>
+                <div className="text-sm font-bold text-rose-400 mt-0.5">4</div>
+                <div className="text-[9.5px] text-rose-300 mt-0.5">regressed</div>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div className="text-[10px] text-slate-500 uppercase">Fixed</div>
+                <div className="text-sm font-bold text-emerald-400 mt-0.5">2</div>
+                <div className="text-[9.5px] text-emerald-300 mt-0.5">now pass</div>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div className="text-[10px] text-slate-500 uppercase">Flaky</div>
+                <div className="text-sm font-bold text-amber-400 mt-0.5">3</div>
+                <div className="text-[9.5px] text-amber-300 mt-0.5">intermittent</div>
+              </div>
+            </div>
+
+            {/* Performance and Power Table */}
+            <div className="space-y-2">
+              <div className="text-xs font-mono font-semibold text-slate-200">Performance & Energy Footprint</div>
+              <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr>
-                    <th>Metric</th>
-                    <th>0919</th>
-                    <th>0926</th>
-                    <th>Change</th>
+                  <tr className="border-b border-slate-800 text-[10.5px] font-mono text-slate-400 uppercase">
+                    <th className="py-1 px-1">Metric</th>
+                    <th className="py-1 px-1 text-center">0919</th>
+                    <th className="py-1 px-1 text-center">0926</th>
+                    <th className="py-1 px-1 text-right">Change</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-800/50 font-mono text-[11px]">
                   <tr>
-                    <td>Boot time</td>
-                    <td>19.8 s</td>
-                    <td>21.4 s</td>
-                    <td><span className="perf-change danger">+8%</span></td>
+                    <td className="py-1.5 px-1 text-slate-300">Boot time</td>
+                    <td className="py-1.5 px-1 text-center text-slate-400">19.8 s</td>
+                    <td className="py-1.5 px-1 text-center text-slate-200">21.4 s</td>
+                    <td className="py-1.5 px-1 text-right text-rose-400 font-semibold">+8%</td>
                   </tr>
                   <tr>
-                    <td>PTT floor-grab latency</td>
-                    <td>176 ms</td>
-                    <td>182 ms</td>
-                    <td><span className="perf-change neutral">+3%</span></td>
+                    <td className="py-1.5 px-1 text-slate-300">PTT floor latency</td>
+                    <td className="py-1.5 px-1 text-center text-slate-400">176 ms</td>
+                    <td className="py-1.5 px-1 text-center text-slate-200">182 ms</td>
+                    <td className="py-1.5 px-1 text-right text-slate-400">+3%</td>
                   </tr>
                   <tr>
-                    <td>PTT app cold start</td>
-                    <td>790 ms</td>
-                    <td>820 ms</td>
-                    <td><span className="perf-change neutral">+4%</span></td>
+                    <td className="py-1.5 px-1 text-slate-300">PTT cold start</td>
+                    <td className="py-1.5 px-1 text-center text-slate-400">790 ms</td>
+                    <td className="py-1.5 px-1 text-center text-slate-200">820 ms</td>
+                    <td className="py-1.5 px-1 text-right text-slate-400">+4%</td>
                   </tr>
                   <tr>
-                    <td>Wi-Fi connect time</td>
-                    <td>2.2 s</td>
-                    <td>2.1 s</td>
-                    <td><span className="perf-change success">-5%</span></td>
+                    <td className="py-1.5 px-1 text-slate-300">Wi-Fi connect time</td>
+                    <td className="py-1.5 px-1 text-center text-slate-400">2.2 s</td>
+                    <td className="py-1.5 px-1 text-center text-slate-200">2.1 s</td>
+                    <td className="py-1.5 px-1 text-right text-emerald-400 font-semibold">-5%</td>
                   </tr>
                   <tr>
-                    <td>Idle battery drain</td>
-                    <td>1.7 %/h</td>
-                    <td>1.9 %/h</td>
-                    <td><span className="perf-change danger">+12%</span></td>
+                    <td className="py-1.5 px-1 text-slate-300">Idle battery drain</td>
+                    <td className="py-1.5 px-1 text-center text-slate-400">1.7 %/h</td>
+                    <td className="py-1.5 px-1 text-center text-slate-200">1.9 %/h</td>
+                    <td className="py-1.5 px-1 text-right text-rose-400 font-semibold">+12%</td>
                   </tr>
                 </tbody>
               </table>
-              <div className="perf-power-footer-note">
-                Changes worse than 5% are flagged.
+              <div className="text-[10px] text-slate-500 font-mono">
+                Regressions worse than 5% SLA threshold are flagged automatically.
               </div>
             </div>
           </div>
 
-          <div className="reports-card">
-            <div className="reports-card-header">
-              <div className="reports-card-title">Share run {selectedRunId}</div>
+          {/* Share Run Link & Export Actions */}
+          <div className="bg-[#0e1422] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <Share2 className="size-3.5 text-blue-400" />
+                Share Run {selectedRunId}
+              </h3>
             </div>
 
-            <div className="share-link-group">
+            {/* Share link input */}
+            <div className="flex gap-2">
               <input
                 type="text"
                 readOnly
-                className="share-link-input"
                 value={`relay-qa/reports/run-${selectedRunId.replace('#', '')}`}
+                className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono select-all"
               />
-              <button className="btn-copy-link" onClick={handleCopyLink}>
-                Copy link
+              <button
+                onClick={handleCopyLink}
+                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Copy className="size-3.5" /> Copy
               </button>
             </div>
 
-            <div className="share-config-grid">
-              <div className="share-field">
-                <label className="share-field-label">Who can open</label>
-                <select 
-                  className="share-field-select"
+            {/* Scope & Expiration */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="text-slate-400 font-medium">Access Control</label>
+                <select
                   value={shareConfig.whoCanOpen}
                   onChange={(e) => setShareConfig({ ...shareConfig, whoCanOpen: e.target.value })}
+                  className="w-full mt-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-300"
                 >
-                  <option value="organization">Anyone in your organization</option>
-                  <option value="qa_team">Relay QA Team only</option>
-                  <option value="public_link">Anyone with link</option>
+                  <option value="organization">Organization Internal</option>
+                  <option value="qa_team">QA Team Only</option>
+                  <option value="public_link">Anyone with Link</option>
                 </select>
               </div>
 
-              <div className="share-field">
-                <label className="share-field-label">Link expires</label>
-                <select 
-                  className="share-field-select"
+              <div>
+                <label className="text-slate-400 font-medium">Link Expiration</label>
+                <select
                   value={shareConfig.expires}
                   onChange={(e) => setShareConfig({ ...shareConfig, expires: e.target.value })}
+                  className="w-full mt-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-300"
                 >
-                  <option value="30days">In 30 days</option>
-                  <option value="7days">In 7 days</option>
-                  <option value="90days">In 90 days</option>
+                  <option value="30days">30 Days</option>
+                  <option value="7days">7 Days</option>
+                  <option value="90days">90 Days</option>
                   <option value="never">Never</option>
                 </select>
               </div>
             </div>
 
-            <div className="share-checkboxes-row">
-              <label className="share-checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={shareConfig.logs} 
+            {/* Included Artifacts Checkboxes */}
+            <div className="flex flex-wrap gap-3 text-xs text-slate-300 font-mono">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shareConfig.logs}
                   onChange={(e) => setShareConfig({ ...shareConfig, logs: e.target.checked })}
+                  className="rounded text-blue-600"
                 />
-                Logs
+                <span>Raw Logs</span>
               </label>
-
-              <label className="share-checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={shareConfig.screenshots} 
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shareConfig.screenshots}
                   onChange={(e) => setShareConfig({ ...shareConfig, screenshots: e.target.checked })}
+                  className="rounded text-blue-600"
                 />
-                Screenshots
+                <span>Screenshots</span>
               </label>
-
-              <label className="share-checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={shareConfig.videos} 
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shareConfig.videos}
                   onChange={(e) => setShareConfig({ ...shareConfig, videos: e.target.checked })}
+                  className="rounded text-blue-600"
                 />
-                Videos
-              </label>
-
-              <label className="share-checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={shareConfig.deviceMetrics} 
-                  onChange={(e) => setShareConfig({ ...shareConfig, deviceMetrics: e.target.checked })}
-                />
-                Device metrics
+                <span>Screen Video</span>
               </label>
             </div>
 
-            <div className="share-actions-row">
-              <button className="share-action-btn" onClick={() => showToast('Opening draft email with test run summary...')}>
-                Email
+            {/* Quick Export Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => showToast('Opening draft email with test run summary...')}
+                className="py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-800 transition-colors"
+              >
+                Email Report
               </button>
-              <button className="share-action-btn" onClick={() => showToast('Posted run summary to Slack #relay-qa-regressions')}>
+              <button
+                onClick={() => showToast('Posted run summary to Slack #relay-qa-regressions')}
+                className="py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-800 transition-colors"
+              >
                 Post to Slack
               </button>
-              <button className="share-action-btn" onClick={() => showToast('Drafting Jira release validation ticket...')}>
-                Create Jira issue
+              <button
+                onClick={() => showToast('Drafting Jira release validation ticket...')}
+                className="py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-800 transition-colors"
+              >
+                File Jira Issue
               </button>
-              <button className="share-action-btn" onClick={() => showToast('Generating PDF Report: Relay-Run-1039.pdf...')}>
+              <button
+                onClick={() => showToast('Generating PDF Report: Relay-Run-1039.pdf...')}
+                className="py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-800 transition-colors"
+              >
                 Download PDF
               </button>
             </div>
           </div>
+
         </div>
+
       </div>
 
-      {toastMessage && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: '#111827',
-          color: '#ffffff',
-          padding: '12px 18px',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: '500',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
-          zIndex: 2000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <span style={{ color: '#10b981' }}>✓</span>
-          {toastMessage}
-        </div>
-      )}
-
+      {/* Evidence Modal */}
       {activeEvidenceModal && (
-        <div className="reports-modal-backdrop" onClick={() => setActiveEvidenceModal(null)}>
-          <div className="reports-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="reports-modal-header">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveEvidenceModal(null)}>
+          <div className="w-full max-w-xl bg-[#0a0f1b] border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div>
-                <h3>Evidence: {activeEvidenceModal.test}</h3>
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                  Artifact type: {activeEvidenceModal.type.toUpperCase()}
-                </span>
+                <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                  <FileText className="size-4 text-blue-400" /> Evidence: {activeEvidenceModal.test}
+                </h3>
+                <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                  Artifact Format: {activeEvidenceModal.type.toUpperCase()}
+                </p>
               </div>
-              <button onClick={() => setActiveEvidenceModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280' }}>
-                ✕
+              <button onClick={() => setActiveEvidenceModal(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="size-4" />
               </button>
             </div>
-            <div className="reports-modal-body">
+
+            <div>
               {activeEvidenceModal.type === 'log' && (
-                <div style={{ background: '#0f172a', color: '#f8fafc', padding: '14px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                  {`09-25 01:14:22.418  2100  2890 E WifiStateMachine: Roaming failed to switch to BSSID 74:ac:b9:42:11:80 within 2000ms SLA
-09-25 01:14:23.102  2100  2890 W WifiNative: Driver roam time elapsed: 4812 ms
-09-25 01:14:23.110  2100  2890 E RelayTestFramework: ASSERTION FAILED: [CONN_WIFI_ROAM_014] expected <= 2000 ms, actual 4812 ms
-Stacktrace:
-  at com.relay.qa.tests.wifi.WifiRoamingTest.testFastBssTransition(WifiRoamingTest.kt:88)`}
+                <div className="p-3 bg-black/80 border border-slate-900 rounded-xl font-mono text-[11px] text-slate-300 space-y-1">
+                  <div className="text-rose-400">09-25 01:14:22.418  2100  2890 E WifiStateMachine: Roaming failed to switch to BSSID within 2000ms SLA</div>
+                  <div className="text-amber-300">09-25 01:14:23.102  2100  2890 W WifiNative: Driver roam time elapsed: 4812 ms</div>
+                  <div className="text-rose-400 font-bold">09-25 01:14:23.110  2100  2890 E RelayTestFramework: ASSERTION FAILED: expected &lt;= 2000 ms, actual 4812 ms</div>
+                  <div className="text-slate-500">at com.relay.qa.tests.wifi.WifiRoamingTest.testFastBssTransition(WifiRoamingTest.kt:88)</div>
                 </div>
               )}
 
               {activeEvidenceModal.type === 'screenshot' && (
-                <div style={{ textAlign: 'center', background: '#f8fafc', padding: '24px', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-                  <div style={{ width: '180px', height: '280px', background: '#1e293b', borderRadius: '16px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '16px' }}>
-                    <div style={{ width: '40px', height: '4px', background: '#475569', borderRadius: '2px', marginBottom: '16px' }}></div>
-                    <span style={{ fontSize: '11px', color: '#f87171', fontWeight: '600' }}>⚠ Test Assertion Failed</span>
-                    <span style={{ fontSize: '10px', marginTop: '8px', textAlign: 'center' }}>{activeEvidenceModal.error}</span>
+                <div className="p-8 bg-slate-950 border border-dashed border-slate-800 rounded-xl text-center space-y-2">
+                  <div className="w-48 h-64 bg-slate-900 border border-slate-800 rounded-2xl mx-auto flex flex-col items-center justify-center p-4">
+                    <span className="text-xs font-bold text-rose-400">⚠ Assertion Failed</span>
+                    <span className="text-[10px] text-slate-500 text-center mt-2">{activeEvidenceModal.error}</span>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '12px' }}>
-                    Captured at timestamp 01:14:23.110 (Frame 4,812ms)
-                  </div>
+                  <div className="text-[11px] font-mono text-slate-500">Captured at timestamp 01:14:23.110 (Frame 4,812ms)</div>
                 </div>
               )}
 
               {activeEvidenceModal.type === 'video' && (
-                <div style={{ textAlign: 'center', background: '#f8fafc', padding: '24px', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-                  <div style={{ width: '100%', height: '220px', background: '#0f172a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
-                    ▶ Recording playback: 00:04.812 (H.265 / 1080p 60fps)
+                <div className="p-8 bg-slate-950 border border-dashed border-slate-800 rounded-xl text-center space-y-2">
+                  <div className="w-full h-48 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center text-sky-400 font-mono text-xs">
+                    ▶ Screen recording: 00:04.812 (H.265 / 1080p 60fps)
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '12px' }}>
-                    Screen recording synchronized with ADB logcat stream
-                  </div>
+                  <div className="text-[11px] font-mono text-slate-500">Video synchronized with high-frequency ADB log stream</div>
                 </div>
               )}
             </div>
-            <div className="reports-modal-footer">
-              <button 
-                className="share-action-btn"
-                onClick={() => {
-                  showToast(`Downloading ${activeEvidenceModal.type} artifact...`);
-                }}
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => showToast(`Downloaded ${activeEvidenceModal.type} artifact bundle`)}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium"
               >
-                Download artifact
+                Download Artifact
               </button>
-              <button 
-                className="btn-copy-link" 
+              <button
                 onClick={() => setActiveEvidenceModal(null)}
+                className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
               >
                 Close
               </button>
@@ -776,56 +839,67 @@ Stacktrace:
         </div>
       )}
 
+      {/* Create Jira Bug Modal */}
       {createBugModal && (
-        <div className="reports-modal-backdrop" onClick={() => setCreateBugModal(null)}>
-          <div className="reports-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="reports-modal-header">
-              <h3>Create Jira Issue for Test Failure</h3>
-              <button onClick={() => setCreateBugModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setCreateBugModal(null)}>
+          <div className="w-full max-w-lg bg-[#0a0f1b] border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <ShieldAlert className="size-4 text-amber-400" /> Create Jira Issue
+              </h3>
+              <button onClick={() => setCreateBugModal(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="size-4" />
+              </button>
             </div>
-            <div className="reports-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+            <div className="space-y-3 text-xs">
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Summary</label>
-                <input 
-                  type="text" 
+                <label className="text-slate-300 font-medium">Summary</label>
+                <input
+                  type="text"
                   defaultValue={`[${createBugModal.test}] ${createBugModal.error}`}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }} 
+                  className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Component</label>
-                  <input 
-                    type="text" 
+                  <label className="text-slate-300 font-medium">Component</label>
+                  <input
+                    type="text"
                     defaultValue={createBugModal.component}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }} 
+                    className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200"
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Priority</label>
-                  <select style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }} defaultValue="High - P1">
+                  <label className="text-slate-300 font-medium">Priority</label>
+                  <select defaultValue="High - P1" className="w-full mt-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200">
                     <option>Blocker - P0</option>
                     <option>High - P1</option>
                     <option>Medium - P2</option>
                   </select>
                 </div>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Regression Details</label>
-                <div style={{ fontSize: '12px', color: '#4b5563', background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  Detected in build <strong>2.4.0 (0925)</strong> on device Relay X-001.<br />
-                  Logs, screenshot and video artifacts are automatically attached.
-                </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] font-mono text-slate-400">
+                Detected in build <strong>2.4.0 (0925)</strong> on device Relay X-001.<br />
+                Logs, screenshot, and video artifacts attached automatically.
               </div>
             </div>
-            <div className="reports-modal-footer">
-              <button className="share-action-btn" onClick={() => setCreateBugModal(null)}>Cancel</button>
-              <button 
-                className="btn-copy-link" 
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <button
+                onClick={() => setCreateBugModal(null)}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium"
+              >
+                Cancel
+              </button>
+              <button
                 onClick={() => {
                   setCreateBugModal(null);
                   showToast(`Created Jira issue RLY-2235: [${createBugModal.test}] ${createBugModal.error}`);
                 }}
+                className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
               >
                 Create Jira Issue
               </button>
