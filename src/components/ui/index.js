@@ -5,3 +5,4 @@ export { Tabs } from './Tabs';
 export { Modal } from './Modal';
 export { Button } from './Button';
 export { MotionSlideMenu } from './MotionSlideMenu';
+export { default as Ballpit } from './Ballpit';
